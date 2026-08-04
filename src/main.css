@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 18% 5%; /* #0B0B10 */
+    --foreground: 210 40% 98%; /* #F8FAFC */
+
+    --card: 240 18% 9%; /* #12121A */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 240 18% 12%; /* #1A1A24 */
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 84 81% 55%; /* #A3E635 - Volt Lime */
+    --primary-foreground: 240 18% 5%;
+
+    --secondary: 27 96% 61%; /* #FB923C - Energetic Orange */
+    --secondary-foreground: 240 18% 5%;
+
+    --muted: 240 16% 15%; /* #1A1A24 */
+    --muted-foreground: 215 16% 65%; /* #94A3B8 */
+
+    --accent: 84 81% 55%;
+    --accent-foreground: 240 18% 5%;
+
+    --destructive: 0 91% 71%; /* #F87171 */
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 240 16% 18%; /* #262635 */
+    --input: 240 16% 18%;
+    --ring: 84 81% 55%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 240 18% 7%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 84 81% 55%;
+    --sidebar-primary-foreground: 240 18% 5%;
+    --sidebar-accent: 240 16% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 240 16% 18%;
+    --sidebar-ring: 84 81% 55%;
+
+    --chart-1: 84 81% 55%; /* Lime #A3E635 */
+    --chart-2: 27 96% 61%; /* Orange #FB923C */
+    --chart-3: 187 85% 53%; /* Cyan #22D3EE */
+    --chart-4: 258 90% 76%; /* Violet #A78BFA */
+    --chart-5: 330 86% 70%; /* Pink #F472B6 */
+  }
+
+  body {
+    background-color: #0b0b10;
+    color: #f8fafc;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Custom scrollbar for dark UI */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0b0b10;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #262635;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a3e635;
+  }
+
+  section[aria-label='Notifications alt+T'] {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+@layer utilities {
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(30px, -20px) scale(1.1);
+    }
+  }
+
+  .animate-drift {
+    animation: drift 12s ease-in-out infinite alternate;
+  }
+
+  .animate-drift-reverse {
+    animation: drift 14s ease-in-out infinite alternate-reverse;
+  }
+}

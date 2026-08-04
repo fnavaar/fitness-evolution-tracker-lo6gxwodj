@@ -1,0 +1,694 @@
+{
+  "generatedAt": "2026-08-04T13:45:32.468Z",
+  "collections": [
+    {
+      "name": "users",
+      "type": "auth",
+      "apiRules": {
+        "list": "id = @request.auth.id",
+        "view": "id = @request.auth.id",
+        "create": "",
+        "update": "id = @request.auth.id",
+        "delete": "id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "avatar",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ]
+    },
+    {
+      "name": "profiles",
+      "type": "base",
+      "apiRules": {
+        "list": "user_id = @request.auth.id",
+        "view": "user_id = @request.auth.id",
+        "create": "user_id = @request.auth.id",
+        "update": "user_id = @request.auth.id",
+        "delete": "user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "goal",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["emagrecimento", "hipertrofia", "condicionamento", "resistencia"]
+        },
+        {
+          "name": "current_weight",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "height",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "birth_date",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "activity_level",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["sedentario", "levemente_ativo", "moderadamente_ativo", "muito_ativo"]
+        },
+        {
+          "name": "training_frequency",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "dietary_preference",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["onivoro", "vegetariano", "vegano"]
+        },
+        {
+          "name": "restrictions",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_profiles_user_id ON profiles (user_id)"]
+    },
+    {
+      "name": "exercises",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "muscle_group",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["peito", "costas", "pernas", "ombros", "bracos", "core", "gluteos"]
+        },
+        {
+          "name": "equipment",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["halteres", "barra", "maquina", "peso_corporal", "cabos"]
+        },
+        {
+          "name": "difficulty",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["iniciante", "intermediario", "avancado"]
+        },
+        {
+          "name": "instructions",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "image",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "vector",
+          "type": "vector",
+          "required": false,
+          "system": false,
+          "vectorDimensions": 1536,
+          "vectorDistance": "l2"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_exercises_muscle_group ON exercises (muscle_group)"]
+    },
+    {
+      "name": "workouts",
+      "type": "base",
+      "apiRules": {
+        "list": "user_id = @request.auth.id",
+        "view": "user_id = @request.auth.id",
+        "create": "user_id = @request.auth.id",
+        "update": "user_id = @request.auth.id",
+        "delete": "user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "goal",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["emagrecimento", "hipertrofia", "condicionamento", "resistencia"]
+        },
+        {
+          "name": "days_per_week",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_workouts_user_id ON workouts (user_id)"]
+    },
+    {
+      "name": "workout_exercises",
+      "type": "base",
+      "apiRules": {
+        "list": "workout_id.user_id = @request.auth.id",
+        "view": "workout_id.user_id = @request.auth.id",
+        "create": "workout_id.user_id = @request.auth.id",
+        "update": "workout_id.user_id = @request.auth.id",
+        "delete": "workout_id.user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "workout_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "workouts"
+        },
+        {
+          "name": "exercise_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "exercises"
+        },
+        {
+          "name": "sets",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "reps",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "rest_time",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "sort_order",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_we_workout_id ON workout_exercises (workout_id)",
+        "CREATE INDEX idx_we_exercise_id ON workout_exercises (exercise_id)"
+      ]
+    },
+    {
+      "name": "diets",
+      "type": "base",
+      "apiRules": {
+        "list": "user_id = @request.auth.id",
+        "view": "user_id = @request.auth.id",
+        "create": "user_id = @request.auth.id",
+        "update": "user_id = @request.auth.id",
+        "delete": "user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "goal",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["emagrecimento", "hipertrofia", "condicionamento", "resistencia"]
+        },
+        {
+          "name": "daily_calories",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "protein",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "carbs",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "fat",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_diets_user_id ON diets (user_id)"]
+    },
+    {
+      "name": "recipes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "category",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["cafe_da_manha", "almoco", "jantar", "lanche", "shake"]
+        },
+        {
+          "name": "ingredients",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "instructions",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "calories",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "protein",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "carbs",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "fat",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "prep_time",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "servings",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "image",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "vector",
+          "type": "vector",
+          "required": false,
+          "system": false,
+          "vectorDimensions": 1536,
+          "vectorDistance": "l2"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_recipes_category ON recipes (category)"]
+    },
+    {
+      "name": "progress",
+      "type": "base",
+      "apiRules": {
+        "list": "user_id = @request.auth.id",
+        "view": "user_id = @request.auth.id",
+        "create": "user_id = @request.auth.id",
+        "update": "user_id = @request.auth.id",
+        "delete": "user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "weight",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "body_fat",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "chest",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "waist",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "hip",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "arm",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "thigh",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_progress_user_id ON progress (user_id)",
+        "CREATE INDEX idx_progress_created ON progress (created DESC)"
+      ]
+    },
+    {
+      "name": "workout_logs",
+      "type": "base",
+      "apiRules": {
+        "list": "user_id = @request.auth.id",
+        "view": "user_id = @request.auth.id",
+        "create": "user_id = @request.auth.id",
+        "update": "user_id = @request.auth.id",
+        "delete": "user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "workout_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "workouts"
+        },
+        {
+          "name": "exercise_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "exercises"
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "weight_used",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "reps_completed",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "sets_completed",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_wlogs_user_id ON workout_logs (user_id)",
+        "CREATE INDEX idx_wlogs_date ON workout_logs (date DESC)",
+        "CREATE INDEX idx_wlogs_exercise_id ON workout_logs (exercise_id)"
+      ]
+    }
+  ]
+}
