@@ -21,25 +21,15 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export default function Layout() {
-  const { user, logout, isLoading } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [checkingProfile, setCheckingProfile] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const isPublicRoute = [
-    '/',
-    '/login',
-    '/signup',
-    '/verify-email',
-    '/forgot-password',
-    '/reset-password',
-    '/confirm-email-change',
-  ].includes(location.pathname)
-
   useEffect(() => {
     async function checkProfile() {
-      if (!isLoading && user && !isPublicRoute && location.pathname !== '/onboarding') {
+      if (user && location.pathname !== '/onboarding') {
         try {
           const profiles = await pb.collection('profiles').getList(1, 1, {
             filter: `user_id = "${user.id}"`,
@@ -55,12 +45,9 @@ export default function Layout() {
     }
 
     checkProfile()
-  }, [user, isLoading, location.pathname, navigate, isPublicRoute])
+  }, [user, location.pathname, navigate])
 
-  if (
-    isLoading ||
-    (user && !isPublicRoute && location.pathname !== '/onboarding' && checkingProfile)
-  ) {
+  if (user && location.pathname !== '/onboarding' && checkingProfile) {
     return (
       <div className="min-h-screen bg-[#0B0B10] flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
@@ -71,24 +58,6 @@ export default function Layout() {
         </div>
       </div>
     )
-  }
-
-  // Public Layout
-  if (isPublicRoute) {
-    return (
-      <div className="min-h-screen bg-[#0B0B10] text-[#F8FAFC] relative overflow-hidden flex flex-col">
-        {/* Glow ambient shapes */}
-        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-[#A3E635]/10 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute bottom-[-100px] right-10 w-[500px] h-[300px] bg-[#FB923C]/10 rounded-full blur-[140px] pointer-events-none" />
-        <Outlet />
-      </div>
-    )
-  }
-
-  // Unauthenticated protection for non-public routes
-  if (!user) {
-    navigate('/login')
-    return null
   }
 
   // Onboarding layout (full page container)
