@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/contexts/AuthContext'
 import Index from './pages/Index'
 import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -27,7 +28,8 @@ const App = () => (
           {/* Protected routes — auth guard + authenticated Layout (sidebar) */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
-              {/* ADD ALL PROTECTED ROUTES HERE (dashboard, treinos, dietas, receitas, exercicios, coach, onboarding, configuracoes) */}
+              <Route path="/dashboard" element={<Dashboard />} />
+              {/* ADD ALL PROTECTED ROUTES HERE (treinos, dietas, receitas, exercicios, coach, onboarding, configuracoes) */}
             </Route>
           </Route>
 
