@@ -90,9 +90,22 @@ export default function Onboarding() {
         dietary_preference: dietaryPreference,
         restrictions: restrictions.trim() || '',
       })
+
+      // Seed do 1º registro de progresso com o peso informado no onboarding,
+      // para o dashboard (card "Peso Atual" + gráfico de evolução) já nascer
+      // com dados — o dashboard lê peso de `progress`, não de `profiles`.
+      try {
+        await pb.collection('progress').create({
+          user_id: user.id,
+          weight,
+        })
+      } catch (progressErr) {
+        console.error('Erro ao registrar peso inicial no progress:', progressErr)
+      }
+
       toast({
         title: 'Perfil criado!',
-        description: 'Seu perfil foi salvo. Bem-vindo ao EvolutFit.',
+        description: 'Seu perfil e peso inicial foram salvos. Bem-vindo ao EvolutFit.',
       })
       navigate('/dashboard', { replace: true })
     } catch (err) {
