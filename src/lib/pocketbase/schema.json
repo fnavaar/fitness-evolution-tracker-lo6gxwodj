@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-05T15:19:15.993Z",
+  "generatedAt": "2026-08-05T15:33:26.802Z",
   "collections": [
     {
       "name": "users",
@@ -126,6 +126,12 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "bio",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": ["CREATE INDEX idx_profiles_user_id ON profiles (user_id)"]

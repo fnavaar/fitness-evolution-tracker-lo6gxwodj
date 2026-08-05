@@ -84,6 +84,7 @@ export default function Layout() {
     { label: 'Receitas', path: '/receitas', icon: BookOpen },
     { label: 'Exercícios', path: '/exercises', icon: Dumbbell, aliases: ['/exercicios'] },
     { label: 'Coach IA', path: '/coach', icon: Bot },
+    { label: 'Perfil', path: '/perfil', icon: UserIcon, aliases: ['/profile'] },
   ]
 
   const avatarUrl = user.avatar
@@ -146,7 +147,7 @@ export default function Layout() {
         <div className="p-4 border-t border-[#262635] bg-[#0B0B10]/50">
           <div className="flex items-center justify-between p-2 rounded-xl bg-[#12121A] border border-[#262635]">
             <NavLink
-              to="/configuracoes"
+              to="/perfil"
               className="flex items-center gap-3 overflow-hidden flex-1 hover:opacity-80 transition-opacity"
             >
               <Avatar className="w-10 h-10 border border-[#262635]">
@@ -214,12 +215,12 @@ export default function Layout() {
               })}
               <div className="pt-4 border-t border-[#262635] mt-4">
                 <NavLink
-                  to="/configuracoes"
+                  to="/perfil"
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-400"
                 >
                   <Settings className="w-5 h-5" />
-                  <span>Configurações</span>
+                  <span>Perfil</span>
                 </NavLink>
                 <button
                   onClick={() => {
@@ -245,7 +246,7 @@ export default function Layout() {
           </span>
         </NavLink>
 
-        <NavLink to="/configuracoes">
+        <NavLink to="/perfil">
           <Avatar className="w-8 h-8 border border-[#262635]">
             <AvatarImage src={avatarUrl} alt={user.name || 'Perfil'} />
             <AvatarFallback className="bg-[#1A1A24] text-[#A3E635] text-xs">

@@ -16,6 +16,7 @@ import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Onboarding from './pages/Onboarding'
 import Coach from './pages/Coach'
+import Profile from './pages/Profile'
 
 // ONLY IMPORT AND RENDER WORKING PAGES, NEVER ADD PLACEHOLDER COMPONENTS OR PAGES IN THIS FILE
 // AVOID REMOVING ANY CONTEXT PROVIDERS FROM THIS FILE (e.g. TooltipProvider, Toaster, Sonner)
@@ -45,6 +46,8 @@ const App = () => (
               <Route path="/recipes" element={<Recipes />} />
               <Route path="/exercises" element={<Exercises />} />
               <Route path="/exercicios" element={<Exercises />} />
+              <Route path="/perfil" element={<Profile />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
           </Route>
 
