@@ -6,7 +6,7 @@ import {
   ChevronRight,
   Heart,
   ArrowLeftRight,
-  Bicycle,
+  Bike,
   Shield,
   Armchair,
   Flame,
@@ -33,7 +33,7 @@ interface WorkoutCardProps {
 const MUSCLE_ICON: Record<MuscleGroup, LucideIcon> = {
   peito: Heart,
   costas: ArrowLeftRight,
-  pernas: Bicycle,
+  pernas: Bike,
   ombros: Shield,
   bracos: Dumbbell,
   core: Layers,
