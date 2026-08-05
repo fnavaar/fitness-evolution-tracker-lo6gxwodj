@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T14:24:56.154Z",
+  "generatedAt": "2026-08-05T13:23:05.245Z",
   "collections": [
     {
       "name": "users",
@@ -261,6 +261,13 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["pendente", "em_andamento", "concluido"]
         }
       ],
       "indexes": ["CREATE INDEX idx_workouts_user_id ON workouts (user_id)"]

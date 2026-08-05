@@ -7,27 +7,69 @@ routerAdd('POST', '/backend/v1/generate-workout', (e) => {
   const userId = info.auth.id
   const body = info.body || {}
   const goal = body.goal || 'hipertrofia'
-  const daysPerWeek = Number(body.daysPerWeek || 4)
+  const level = body.level || 'intermediario'
+  const duration = Number(body.duration || 60)
+  const equipment = body.equipment || ''
+  const notes = body.notes || ''
 
-  const prompt = `Crie um plano de treino em formato JSON rigoroso para um usuário com objetivo de "${goal}" treinando ${daysPerWeek} dias por semana.
-Responda EXATAMENTE e APENAS com um objeto JSON válido sem formatação markdown em volta, no seguinte formato:
-{
-  "title": "Nome descritivo do plano em PT-BR",
-  "description": "Breve explicação da metodologia do treino em PT-BR",
-  "exercises": [
+  // Deriva dias/semana a partir da duração estimada quando não informado.
+  const durationToDays = {
+    30: 3,
+    45: 4,
+    60: 4,
+    90: 5,
+  }
+  const daysPerWeek = Number(body.daysPerWeek || durationToDays[duration] || 4)
+
+  const levelLabel =
     {
-      "name": "Nome do exercício em PT-BR",
-      "muscle_group": "peito" | "costas" | "pernas" | "ombros" | "bracos" | "core" | "gluteos",
-      "equipment": "halteres" | "barra" | "maquina" | "peso_corporal" | "cabos",
-      "difficulty": "iniciante" | "intermediario" | "avancado",
-      "instructions": "Instruções passo a passo de execução em PT-BR",
-      "sets": 4,
-      "reps": "8-12",
-      "rest_time": 60
-    }
-  ]
-}
-Inclua entre 5 e 8 exercícios variados e focados no objetivo.`
+      iniciante: 'iniciante',
+      intermediario: 'intermediário',
+      avancado: 'avançado',
+    }[level] || 'intermediário'
+
+  const extraContext = []
+  if (equipment) {
+    extraContext.push('Equipamentos disponíveis: ' + equipment + '.')
+  }
+  if (notes) {
+    extraContext.push('Restrições/observações do usuário: ' + notes + '.')
+  }
+  const extra = extraContext.length ? ' ' + extraContext.join(' ') : ''
+
+  const prompt =
+    'Crie um plano de treino em formato JSON rigoroso para um usuário com objetivo de "' +
+    goal +
+    '", nível ' +
+    levelLabel +
+    ', com duração estimada de ' +
+    duration +
+    ' minutos por sessão, treinando ' +
+    daysPerWeek +
+    ' dias por semana.' +
+    extra +
+    '\nResponda EXATAMENTE e APENAS com um objeto JSON válido sem formatação markdown em volta, no seguinte formato:\n' +
+    '{\n' +
+    '  "title": "Nome descritivo do plano em PT-BR",\n' +
+    '  "description": "Breve explicação da metodologia do treino em PT-BR",\n' +
+    '  "exercises": [\n' +
+    '    {\n' +
+    '      "name": "Nome do exercício em PT-BR",\n' +
+    '      "muscle_group": "peito" | "costas" | "pernas" | "ombros" | "bracos" | "core" | "gluteos",\n' +
+    '      "equipment": "halteres" | "barra" | "maquina" | "peso_corporal" | "cabos",\n' +
+    '      "difficulty": "iniciante" | "intermediario" | "avancado",\n' +
+    '      "instructions": "Instruções passo a passo de execução em PT-BR",\n' +
+    '      "sets": 4,\n' +
+    '      "reps": "8-12",\n' +
+    '      "rest_time": 60\n' +
+    '    }\n' +
+    '  ]\n' +
+    '}\n' +
+    'A dificuldade dos exercícios deve ser coerente com o nível ' +
+    levelLabel +
+    '. Inclua entre 5 e 8 exercícios variados e focados no objetivo, ajustando séries, repetições e descanso à duração de ' +
+    duration +
+    ' minutos.'
 
   const response = $ai.chat(
     [
@@ -67,6 +109,7 @@ Inclua entre 5 e 8 exercícios variados e focados no objetivo.`
   workout.set('description', plan.description || 'Treino gerado por Inteligência Artificial.')
   workout.set('goal', goal)
   workout.set('days_per_week', daysPerWeek)
+  workout.set('status', 'pendente')
   $app.save(workout)
 
   const exList = plan.exercises || []
@@ -80,7 +123,7 @@ Inclua entre 5 e 8 exercícios variados e focados no objetivo.`
       exRecord.set('name', item.name)
       exRecord.set('muscle_group', item.muscle_group || 'pernas')
       exRecord.set('equipment', item.equipment || 'halteres')
-      exRecord.set('difficulty', item.difficulty || 'intermediario')
+      exRecord.set('difficulty', item.difficulty || level || 'intermediario')
       exRecord.set('instructions', item.instructions || 'Execute com técnica e foco na contração.')
       $app.save(exRecord)
     }

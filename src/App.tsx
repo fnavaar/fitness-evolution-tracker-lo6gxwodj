@@ -7,6 +7,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import Index from './pages/Index'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import Workouts from './pages/Workouts'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -30,6 +31,8 @@ const App = () => (
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               {/* ADD ALL PROTECTED ROUTES HERE (treinos, dietas, receitas, exercicios, coach, onboarding, configuracoes) */}
+              <Route path="/treinos" element={<Workouts />} />
+              <Route path="/workouts" element={<Workouts />} />
             </Route>
           </Route>
 
