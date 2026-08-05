@@ -11,6 +11,7 @@ import Workouts from './pages/Workouts'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import Onboarding from './pages/Onboarding'
 
 // ONLY IMPORT AND RENDER WORKING PAGES, NEVER ADD PLACEHOLDER COMPONENTS OR PAGES IN THIS FILE
 // AVOID REMOVING ANY CONTEXT PROVIDERS FROM THIS FILE (e.g. TooltipProvider, Toaster, Sonner)
@@ -33,6 +34,7 @@ const App = () => (
               {/* ADD ALL PROTECTED ROUTES HERE (treinos, dietas, receitas, exercicios, coach, onboarding, configuracoes) */}
               <Route path="/treinos" element={<Workouts />} />
               <Route path="/workouts" element={<Workouts />} />
+              <Route path="/onboarding" element={<Onboarding />} />
             </Route>
           </Route>
 
