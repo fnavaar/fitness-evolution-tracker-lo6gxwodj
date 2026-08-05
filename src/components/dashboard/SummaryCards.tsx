@@ -14,7 +14,7 @@ interface SummaryCardsProps {
 }
 
 function WeightCard({ data, isLoading }: SummaryCardsProps) {
-  const summary = buildWeightSummary(data.progress)
+  const summary = buildWeightSummary(data.progress, data.profile?.current_weight ?? null)
 
   let hint: string | undefined
   let hintTone: 'positive' | 'negative' | 'neutral' = 'neutral'
@@ -23,6 +23,9 @@ function WeightCard({ data, isLoading }: SummaryCardsProps) {
     const lost = summary.delta < 0
     hint = `${lost ? '−' : '+'}${abs}kg este mês`
     hintTone = lost ? 'positive' : 'negative'
+  } else if (summary.current !== null && data.progress.length === 0) {
+    hint = 'Do seu perfil'
+    hintTone = 'neutral'
   }
 
   return (
@@ -40,13 +43,29 @@ function WeightCard({ data, isLoading }: SummaryCardsProps) {
 
 function WorkoutsCard({ data, isLoading }: SummaryCardsProps) {
   const count = countWorkoutsThisWeek(data.workoutLogs)
+  const frequency = data.profile?.training_frequency
+  const hasFrequency = typeof frequency === 'number' && frequency > 0
+
+  let hint: string
+  let hintTone: 'positive' | 'negative' | 'neutral'
+  if (count > 0) {
+    hint = 'Nos últimos 7 dias'
+    hintTone = 'positive'
+  } else if (hasFrequency) {
+    hint = `Meta: ${frequency}x por semana`
+    hintTone = 'neutral'
+  } else {
+    hint = 'Sem registros na semana'
+    hintTone = 'neutral'
+  }
+
   return (
     <SummaryCard
       icon={Dumbbell}
       label="Treinos Esta Semana"
       value={String(count)}
-      hint={count > 0 ? 'Nos últimos 7 dias' : 'Sem registros na semana'}
-      hintTone={count > 0 ? 'positive' : 'neutral'}
+      hint={hint}
+      hintTone={hintTone}
       accent="orange"
       isLoading={isLoading}
     />

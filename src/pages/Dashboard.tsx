@@ -9,7 +9,7 @@ import { ChartsSection } from '@/components/dashboard/Charts'
 import { QuickActions } from '@/components/dashboard/QuickActions'
 import { Button } from '@/components/ui/button'
 
-const EMPTY_DATA: DashboardData = { progress: [], workoutLogs: [], diets: [] }
+const EMPTY_DATA: DashboardData = { progress: [], workoutLogs: [], diets: [], profile: null }
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -67,17 +67,17 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-[#A3E635]/10 text-[#A3E635] flex items-center justify-center">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-11 h-11 shrink-0 rounded-xl bg-[#A3E635]/10 text-[#A3E635] flex items-center justify-center">
             <LayoutDashboard className="w-6 h-6" />
           </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
+          <div className="min-w-0">
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white break-words">
               {greeting()}, {firstName(user?.name)} 👋
             </h1>
             <p className="text-sm text-slate-400">Visão geral da sua evolução fitness</p>
           </div>
-        </div>
+        </div>{' '}
       </div>
 
       {/* Estado de erro com retry */}

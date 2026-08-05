@@ -1,6 +1,7 @@
 import pb from '@/lib/pocketbase/client'
 import { format, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { getOrCreateProfile, type ProfileRecord } from '@/services/profiles'
 
 export interface ProgressEntry {
   id: string
@@ -42,6 +43,7 @@ export interface DashboardData {
   progress: ProgressEntry[]
   workoutLogs: WorkoutLog[]
   diets: DietEntry[]
+  profile: ProfileRecord | null
 }
 
 /**
@@ -49,7 +51,7 @@ export interface DashboardData {
  * Lança erro para ser tratado pelo chamador (toast + estado de erro).
  */
 export async function fetchDashboardData(userId: string): Promise<DashboardData> {
-  const [progressRes, logsRes, dietsRes] = await Promise.all([
+  const [progressRes, logsRes, dietsRes, profile] = await Promise.all([
     pb.collection('progress').getFullList({
       filter: `user_id = "${userId}"`,
       sort: 'created',
@@ -62,12 +64,17 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
       filter: `user_id = "${userId}"`,
       sort: '-created',
     }),
+    getOrCreateProfile(userId).catch((err) => {
+      console.error('Erro ao buscar perfil no dashboard:', err)
+      return null
+    }),
   ])
 
   return {
     progress: progressRes as unknown as ProgressEntry[],
     workoutLogs: logsRes as unknown as WorkoutLog[],
     diets: dietsRes as unknown as DietEntry[],
+    profile: profile ?? null,
   }
 }
 
@@ -90,15 +97,34 @@ export interface WeightSummary {
   hasComparison: boolean
 }
 
-export function buildWeightSummary(progress: ProgressEntry[]): WeightSummary {
+export function buildWeightSummary(
+  progress: ProgressEntry[],
+  fallbackWeight?: number | null,
+): WeightSummary {
   if (progress.length === 0) {
-    return { current: null, delta: null, hasComparison: false }
+    // Sem entradas de progresso: usa o current_weight do perfil como fallback.
+    // O delta não pode ser calculado sem progress entries.
+    const hasFallback = typeof fallbackWeight === 'number' && fallbackWeight > 0
+    return {
+      current: hasFallback ? fallbackWeight! : null,
+      delta: null,
+      hasComparison: false,
+    }
   }
 
   const sorted = [...progress].sort(
     (a, b) => new Date(a.created).getTime() - new Date(b.created).getTime(),
   )
   const latest = sorted[sorted.length - 1]
+
+  // Peso atual vazio no progress? Usa o fallback do perfil.
+  const current =
+    typeof latest.weight === 'number' && latest.weight > 0
+      ? latest.weight
+      : typeof fallbackWeight === 'number' && fallbackWeight > 0
+        ? fallbackWeight
+        : null
+
   const latestDate = new Date(latest.created)
   const cutoff = subDays(latestDate, 30)
 
@@ -106,10 +132,12 @@ export function buildWeightSummary(progress: ProgressEntry[]): WeightSummary {
   // Se não houver, usa a mais antiga como referência.
   const ref = [...sorted].reverse().find((p) => new Date(p.created) <= cutoff) ?? sorted[0]
 
+  const canComputeDelta = current !== null && sorted.length > 1
+
   return {
-    current: latest.weight,
-    delta: latest.weight - ref.weight,
-    hasComparison: sorted.length > 1,
+    current,
+    delta: canComputeDelta ? current! - ref.weight : null,
+    hasComparison: canComputeDelta,
   }
 }
 
