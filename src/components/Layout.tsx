@@ -82,7 +82,7 @@ export default function Layout() {
     { label: 'Treinos', path: '/treinos', icon: Dumbbell },
     { label: 'Dietas', path: '/dietas', icon: UtensilsCrossed },
     { label: 'Receitas', path: '/receitas', icon: BookOpen },
-    { label: 'Exercícios', path: '/exercicios', icon: Library },
+    { label: 'Exercícios', path: '/exercises', icon: Dumbbell, aliases: ['/exercicios'] },
     { label: 'Coach IA', path: '/coach', icon: Bot },
   ]
 
@@ -115,7 +115,9 @@ export default function Layout() {
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon
-            const isActive = location.pathname.startsWith(item.path)
+            const isActive =
+              location.pathname.startsWith(item.path) ||
+              (item.aliases || []).some((a: string) => location.pathname.startsWith(a))
             return (
               <NavLink
                 key={item.path}
@@ -193,7 +195,9 @@ export default function Layout() {
             <nav className="p-4 space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon
-                const isActive = location.pathname.startsWith(item.path)
+                const isActive =
+                  location.pathname.startsWith(item.path) ||
+                  (item.aliases || []).some((a: string) => location.pathname.startsWith(a))
                 return (
                   <NavLink
                     key={item.path}

@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard'
 import Workouts from './pages/Workouts'
 import Diets from './pages/Diets'
 import Recipes from './pages/Recipes'
+import Exercises from './pages/Exercises'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -40,6 +41,8 @@ const App = () => (
               <Route path="/dietas" element={<Diets />} />
               <Route path="/receitas" element={<Recipes />} />
               <Route path="/recipes" element={<Recipes />} />
+              <Route path="/exercises" element={<Exercises />} />
+              <Route path="/exercicios" element={<Exercises />} />
             </Route>
           </Route>
 
