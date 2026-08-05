@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-05T14:44:55.638Z",
+  "generatedAt": "2026-08-05T14:59:06.874Z",
   "collections": [
     {
       "name": "users",
@@ -415,6 +415,20 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["pendente", "em_andamento", "concluido"]
+        },
+        {
+          "name": "recipes",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "recipes"
         }
       ],
       "indexes": ["CREATE INDEX idx_diets_user_id ON diets (user_id)"]

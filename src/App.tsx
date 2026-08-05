@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Workouts from './pages/Workouts'
 import Diets from './pages/Diets'
+import Recipes from './pages/Recipes'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -37,6 +38,8 @@ const App = () => (
               <Route path="/workouts" element={<Workouts />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dietas" element={<Diets />} />
+              <Route path="/receitas" element={<Recipes />} />
+              <Route path="/recipes" element={<Recipes />} />
             </Route>
           </Route>
 

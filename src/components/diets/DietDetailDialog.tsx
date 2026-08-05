@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -6,10 +7,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { UtensilsCrossed, Flame, Beef, Wheat, Droplet, Calendar } from 'lucide-react'
+import { UtensilsCrossed, Flame, Beef, Wheat, Droplet, Calendar, BookOpen } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { type DietRecord, DIET_GOAL_LABELS, DIET_PREFERENCE_LABELS } from '@/services/diets'
+import { getRecipe, getRecipeImageUrl, type RecipeRecord } from '@/services/recipes'
 
 interface DietDetailDialogProps {
   diet: DietRecord | null
@@ -18,6 +20,30 @@ interface DietDetailDialogProps {
 }
 
 export function DietDetailDialog({ diet, open, onOpenChange }: DietDetailDialogProps) {
+  const [recipes, setRecipes] = useState<RecipeRecord[]>([])
+
+  useEffect(() => {
+    if (!diet || !open) {
+      setRecipes([])
+      return
+    }
+    const recipeIds = (diet as unknown as { recipes?: string[] }).recipes || []
+    if (recipeIds.length === 0) {
+      setRecipes([])
+      return
+    }
+    let cancelled = false
+    Promise.all(recipeIds.map((id) => getRecipe(id).catch(() => null)))
+      .then((results) => {
+        if (cancelled) return
+        setRecipes(results.filter((r): r is RecipeRecord => r !== null))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [diet, open])
+
   if (!diet) return null
 
   const createdLabel = format(new Date(diet.created), "dd 'de' MMMM 'de' yyyy", {
@@ -126,6 +152,56 @@ export function DietDetailDialog({ diet, open, onOpenChange }: DietDetailDialogP
             </div>
           ))}
         </div>
+
+        {/* Receitas planejadas */}
+        {recipes.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-[#A3E635]" />
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                Receitas planejadas
+              </p>
+            </div>
+            <div className="space-y-2">
+              {recipes.map((r) => {
+                const imageUrl = getRecipeImageUrl(r)
+                return (
+                  <div
+                    key={r.id}
+                    className="flex items-center gap-3 rounded-xl border border-[#262635] bg-[#0B0B10]/60 p-2"
+                  >
+                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
+                      {imageUrl ? (
+                        <img src={imageUrl} alt={r.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[#A3E635]/30 to-[#65A30D]/10 flex items-center justify-center">
+                          <Flame className="w-5 h-5 text-white/80" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-white truncate">{r.name}</p>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                        <span className="inline-flex items-center gap-0.5 text-[#FB923C]">
+                          <Flame className="w-3 h-3" /> {r.calories} kcal
+                        </span>
+                        <span className="inline-flex items-center gap-0.5 text-[#A3E635]">
+                          <Beef className="w-3 h-3" /> {r.protein}g
+                        </span>
+                        <span className="inline-flex items-center gap-0.5 text-[#22D3EE]">
+                          <Wheat className="w-3 h-3" /> {r.carbs}g
+                        </span>
+                        <span className="inline-flex items-center gap-0.5 text-[#A78BFA]">
+                          <Droplet className="w-3 h-3" /> {r.fat}g
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-end pt-2 border-t border-[#262635]">
           <span className="text-xs text-slate-500">
