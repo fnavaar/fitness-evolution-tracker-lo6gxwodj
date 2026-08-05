@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 /**
  * Raiz do app — sem landing page.
  * Redireciona imediatamente com base no status de autenticação:
- *  - autenticado → /dashboard
+ *  - autenticado → /coach
  *  - não autenticado → /login
  */
 export default function Index() {
@@ -24,5 +24,5 @@ export default function Index() {
     )
   }
 
-  return <Navigate to={user ? '/dashboard' : '/login'} replace />
+  return <Navigate to={user ? '/coach' : '/login'} replace />
 }
