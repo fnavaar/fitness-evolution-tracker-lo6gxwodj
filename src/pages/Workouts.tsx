@@ -238,5 +238,3 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
     </div>
   )
 }
-
-export default Workouts
