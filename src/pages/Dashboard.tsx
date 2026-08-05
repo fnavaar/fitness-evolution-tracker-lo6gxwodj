@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { LayoutDashboard, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
-import pb from '@/lib/pocketbase/client'
+import { useRealtime } from '@/hooks/use-realtime'
 import { fetchDashboardData, type DashboardData } from '@/lib/dashboard'
 import { SummaryCards } from '@/components/dashboard/SummaryCards'
 import { ChartsSection } from '@/components/dashboard/Charts'
@@ -44,24 +44,14 @@ export default function Dashboard() {
   }, [load])
 
   // Atualizações em tempo real — reflete progresso, treinos e dietas.
-  useEffect(() => {
-    if (!user) return
-    let active = true
-
-    const cb = () => {
-      if (active) load()
-    }
-    pb.collection('progress').subscribe('*', cb)
-    pb.collection('workout_logs').subscribe('*', cb)
-    pb.collection('diets').subscribe('*', cb)
-
-    return () => {
-      active = false
-      pb.collection('progress').unsubscribe()
-      pb.collection('workout_logs').unsubscribe()
-      pb.collection('diets').unsubscribe()
-    }
-  }, [user, load])
+  // As subscriptions só são criadas quando o usuário está autenticado
+  // e o cliente PocketBase tem um token válido (via useRealtime).
+  const handleRealtime = () => {
+    load()
+  }
+  useRealtime('progress', handleRealtime)
+  useRealtime('workout_logs', handleRealtime)
+  useRealtime('diets', handleRealtime)
 
   return (
     <div className="space-y-8">

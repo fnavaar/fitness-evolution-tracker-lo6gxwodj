@@ -171,9 +171,10 @@ export default function ProfilePage() {
     load()
   }, [load])
 
-  // Realtime no perfil
+  // Realtime no perfil — só assina quando autenticado com token válido.
   useEffect(() => {
     if (!profile) return
+    if (!user || !pb.authStore.isValid || !pb.authStore.token) return
     let active = true
     pb.collection('profiles')
       .subscribe(profile.id, (e) => {
@@ -190,7 +191,7 @@ export default function ProfilePage() {
         .unsubscribe(profile.id)
         .catch(() => {})
     }
-  }, [profile?.id])
+  }, [profile?.id, user])
 
   // Pré-visualização do avatar
   useEffect(() => {

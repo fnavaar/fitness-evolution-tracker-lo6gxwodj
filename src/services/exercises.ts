@@ -75,6 +75,11 @@ export async function getExercise(id: string): Promise<ExerciseRecord> {
  * Retorna a função de cancelamento (UnsubscribeFunc).
  */
 export function subscribeToExercises(callback: () => void): Promise<UnsubscribeFunc> {
+  // Guarda: só assina quando o cliente está autenticado com token válido,
+  // evitando o erro "Invalid realtime client" (400).
+  if (!pb.authStore.isValid || !pb.authStore.token) {
+    return Promise.reject(new Error('PocketBase client is not authenticated'))
+  }
   return pb.collection('exercises').subscribe('*', () => {
     callback()
   })
