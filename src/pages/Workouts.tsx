@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Dumbbell, Sparkles, AlertTriangle, RefreshCw, ListPlus } from 'lucide-react'
+import {
+  Dumbbell,
+  Sparkles,
+  AlertTriangle,
+  RefreshCw,
+  ListPlus,
+  ClipboardCheck,
+  Loader2,
+} from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import { useRealtime } from '@/hooks/use-realtime'
@@ -16,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { WorkoutCard } from '@/components/workouts/WorkoutCard'
 import { GenerateWorkoutDialog } from '@/components/workouts/GenerateWorkoutDialog'
 import { WorkoutDetailDialog } from '@/components/workouts/WorkoutDetailDialog'
+import { confirmDraft, listPendingDrafts, type CoachDraft } from '@/services/coachDrafts'
 
 type FilterValue = 'todos' | WorkoutGoal
 
@@ -32,6 +41,8 @@ export default function Workouts() {
   const { toast } = useToast()
 
   const [workouts, setWorkouts] = useState<WorkoutRecord[]>([])
+  const [pendingDrafts, setPendingDrafts] = useState<CoachDraft[]>([])
+  const [publishingDraftId, setPublishingDraftId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -50,6 +61,15 @@ export default function Workouts() {
       // Sincroniza o treino selecionado com a lista recarregada (realtime/mutações),
       // ou fecha o detalhe caso tenha sido excluído.
       setSelected((prev) => (prev ? (result.find((w) => w.id === prev.id) ?? null) : null))
+
+      // Fallback: se a publicação automática do Coach falhar, a proposta
+      // continua acessível nesta área e pode ser adicionada manualmente.
+      try {
+        const drafts = await listPendingDrafts(user.id)
+        setPendingDrafts(drafts.filter((draft) => draft.type === 'workout'))
+      } catch (draftError) {
+        console.error('Erro ao carregar propostas do Coach:', draftError)
+      }
     } catch (err) {
       console.error('Erro ao carregar treinos:', err)
       setError(true)
@@ -62,6 +82,36 @@ export default function Workouts() {
       setIsLoading(false)
     }
   }, [user, toast])
+
+  const handlePublishDraft = useCallback(
+    async (draft: CoachDraft) => {
+      setPublishingDraftId(draft.id)
+      try {
+        const result = await confirmDraft(draft.id)
+        setPendingDrafts((current) => current.filter((item) => item.id !== draft.id))
+        toast({
+          title: 'Treino adicionado!',
+          description:
+            result.sessions && result.sessions > 1
+              ? result.sessions + ' sessões foram adicionadas à sua semana.'
+              : 'O treino já está disponível em Meus Treinos.',
+        })
+        await load()
+      } catch (publishError) {
+        toast({
+          title: 'Não foi possível adicionar o treino',
+          description:
+            publishError instanceof Error
+              ? publishError.message
+              : 'Tente novamente em alguns instantes.',
+          variant: 'destructive',
+        })
+      } finally {
+        setPublishingDraftId(null)
+      }
+    },
+    [load, toast],
+  )
 
   useEffect(() => {
     load()
@@ -121,6 +171,19 @@ export default function Workouts() {
           Gerar Treino com IA
         </Button>
       </div>
+
+      {pendingDrafts.length > 0 && (
+        <div className="space-y-3">
+          {pendingDrafts.map((draft) => (
+            <PendingCoachDraftCard
+              key={draft.id}
+              draft={draft}
+              isPublishing={publishingDraftId === draft.id}
+              onPublish={handlePublishDraft}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Conteúdo */}
       {error && !isLoading ? (
@@ -252,6 +315,81 @@ function EmptyState({ onGenerate }: { onGenerate: () => void }) {
         <Sparkles className="w-4 h-4" />
         Gerar Treino com IA
       </Button>
+    </div>
+  )
+}
+
+function PendingCoachDraftCard({
+  draft,
+  isPublishing,
+  onPublish,
+}: {
+  draft: CoachDraft
+  isPublishing: boolean
+  onPublish: (draft: CoachDraft) => void
+}) {
+  const payload = (draft.payload || {}) as {
+    title?: string
+    days?: Array<{ day_of_week?: string }>
+  }
+  const sessions = Array.isArray(payload.days) ? payload.days : []
+  const dayLabels: Record<string, string> = {
+    segunda: 'Segunda',
+    terca: 'Terça',
+    quarta: 'Quarta',
+    quinta: 'Quinta',
+    sexta: 'Sexta',
+    sabado: 'Sábado',
+    domingo: 'Domingo',
+  }
+
+  return (
+    <div className="rounded-2xl border border-[#A3E635]/35 bg-[#A3E635]/10 p-4 md:p-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 shrink-0 rounded-xl bg-[#A3E635] text-[#0B0B10] flex items-center justify-center">
+            <ClipboardCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#A3E635]">
+              Semana criada pelo Coach
+            </p>
+            <h2 className="mt-1 text-base font-extrabold text-white">
+              {payload.title || 'Plano personalizado pronto'}
+            </h2>
+            <p className="mt-1 text-sm text-slate-300">
+              {sessions.length > 0
+                ? sessions.length + ' sessões prontas para adicionar à sua área de treinos.'
+                : 'Seu plano está pronto para adicionar à sua área de treinos.'}
+            </p>
+            {sessions.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {sessions.map((session, index) => (
+                  <span
+                    key={session.day_of_week || index}
+                    className="rounded-md border border-[#A3E635]/25 bg-[#0B0B10]/30 px-2 py-0.5 text-[11px] font-semibold text-[#ECFCCB]"
+                  >
+                    {dayLabels[session.day_of_week || ''] || 'Sessão ' + (index + 1)}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <Button
+          type="button"
+          onClick={() => onPublish(draft)}
+          disabled={isPublishing}
+          className="shrink-0 bg-[#A3E635] hover:bg-[#84CC16] text-[#0B0B10] font-bold rounded-xl"
+        >
+          {isPublishing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <ClipboardCheck className="w-4 h-4" />
+          )}
+          {isPublishing ? 'Adicionando...' : 'Adicionar aos meus treinos'}
+        </Button>
+      </div>
     </div>
   )
 }
