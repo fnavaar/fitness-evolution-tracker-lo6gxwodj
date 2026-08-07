@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/contexts/AuthContext'
 import Index from './pages/Index'
 import Login from './pages/Login'
+import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import Workouts from './pages/Workouts'
 import Diets from './pages/Diets'
@@ -31,6 +32,7 @@ const App = () => (
           {/* Public routes — standalone, no authenticated layout */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
 
           {/* Protected routes — auth guard + authenticated Layout (sidebar) */}
           <Route element={<ProtectedRoute />}>
