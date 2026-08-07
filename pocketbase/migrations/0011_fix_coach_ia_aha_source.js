@@ -6,6 +6,7 @@ migrate(
   (app) => {
     $ai.agents.define(app, {
       slug: 'fitness-coach',
+      name: 'Coach IA',
       memory: [
         {
           type: 'url',
