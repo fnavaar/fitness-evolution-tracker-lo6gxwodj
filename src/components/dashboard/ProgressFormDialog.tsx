@@ -33,7 +33,7 @@ const FIELD_LABELS: { key: string; label: string; placeholder: string; step?: st
   { key: 'thigh', label: 'Coxa (cm)', placeholder: 'Ex.: 57', step: '0.1' },
 ]
 
-export default function ProgressFormDialog({
+export function ProgressFormDialog({
   open,
   onOpenChange,
   onSaved,
@@ -171,3 +171,5 @@ export default function ProgressFormDialog({
     </Dialog>
   )
 }
+
+export default ProgressFormDialog
