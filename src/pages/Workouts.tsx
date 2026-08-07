@@ -8,6 +8,8 @@ import {
   type WorkoutRecord,
   type WorkoutGoal,
   GOAL_LABELS,
+  DAY_LABELS,
+  DAY_ORDER,
 } from '@/services/workouts'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -78,6 +80,21 @@ export default function Workouts() {
     return workouts.filter((w) => w.goal === filter)
   }, [workouts, filter])
 
+  const groupedByDay = useMemo(() => {
+    const groups = new Map<string, { label: string; order: number; workouts: WorkoutRecord[] }>()
+
+    filtered.forEach((workout) => {
+      const key = workout.day_of_week || 'sem_dia'
+      const label = workout.day_of_week ? DAY_LABELS[workout.day_of_week] : 'Plano geral'
+      const order = workout.day_of_week ? DAY_ORDER[workout.day_of_week] : 99
+      const current = groups.get(key) || { label, order, workouts: [] }
+      current.workouts.push(workout)
+      groups.set(key, current)
+    })
+
+    return Array.from(groups.values()).sort((a, b) => a.order - b.order)
+  }, [filtered])
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -146,9 +163,26 @@ export default function Workouts() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {filtered.map((w) => (
-                <WorkoutCard key={w.id} workout={w} onSeeDetails={setSelected} onDeleted={load} />
+            <div className="space-y-8">
+              {groupedByDay.map((group) => (
+                <section key={group.label} className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-extrabold text-white">{group.label}</h2>
+                    <span className="rounded-full border border-[#262635] bg-[#12121A] px-2.5 py-1 text-xs font-semibold text-slate-400">
+                      {group.workouts.length} {group.workouts.length === 1 ? 'sessão' : 'sessões'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    {group.workouts.map((w) => (
+                      <WorkoutCard
+                        key={w.id}
+                        workout={w}
+                        onSeeDetails={setSelected}
+                        onDeleted={load}
+                      />
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           )}

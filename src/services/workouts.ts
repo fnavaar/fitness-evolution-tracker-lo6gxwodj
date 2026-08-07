@@ -4,6 +4,17 @@ import pb from '@/lib/pocketbase/client'
 
 export type WorkoutGoal = 'hipertrofia' | 'emagrecimento' | 'condicionamento' | 'resistencia'
 export type WorkoutStatus = 'pendente' | 'em_andamento' | 'concluido'
+export type WorkoutDay = 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta' | 'sabado' | 'domingo'
+export type WorkoutType =
+  | 'full_body'
+  | 'upper'
+  | 'lower'
+  | 'push'
+  | 'pull'
+  | 'legs'
+  | 'cardio'
+  | 'mobilidade'
+  | 'core'
 export type MuscleGroup = 'peito' | 'costas' | 'pernas' | 'ombros' | 'bracos' | 'core' | 'gluteos'
 
 export interface ExerciseRecord {
@@ -35,6 +46,9 @@ export interface WorkoutRecord {
   goal: WorkoutGoal
   days_per_week: number
   status: WorkoutStatus
+  /** Sessão semanal — registros antigos podem não ter estes campos. */
+  day_of_week?: WorkoutDay
+  workout_type?: WorkoutType
   created: string
   updated: string
   /** Itens de treino relacionados, populados via expand. */
@@ -96,6 +110,8 @@ export interface UpdateWorkoutInput {
   goal?: WorkoutGoal
   days_per_week?: number
   status?: WorkoutStatus
+  day_of_week?: WorkoutDay
+  workout_type?: WorkoutType
 }
 
 /**
@@ -197,6 +213,38 @@ export const STATUS_LABELS: Record<WorkoutStatus, string> = {
   pendente: 'Pendente',
   em_andamento: 'Em andamento',
   concluido: 'Concluído',
+}
+
+export const DAY_LABELS: Record<WorkoutDay, string> = {
+  segunda: 'Segunda-feira',
+  terca: 'Terça-feira',
+  quarta: 'Quarta-feira',
+  quinta: 'Quinta-feira',
+  sexta: 'Sexta-feira',
+  sabado: 'Sábado',
+  domingo: 'Domingo',
+}
+
+export const DAY_ORDER: Record<WorkoutDay, number> = {
+  segunda: 1,
+  terca: 2,
+  quarta: 3,
+  quinta: 4,
+  sexta: 5,
+  sabado: 6,
+  domingo: 7,
+}
+
+export const WORKOUT_TYPE_LABELS: Record<WorkoutType, string> = {
+  full_body: 'Full body',
+  upper: 'Parte superior',
+  lower: 'Parte inferior',
+  push: 'Push',
+  pull: 'Pull',
+  legs: 'Pernas',
+  cardio: 'Cardio',
+  mobilidade: 'Mobilidade',
+  core: 'Core',
 }
 
 export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {

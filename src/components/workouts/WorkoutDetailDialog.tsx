@@ -51,6 +51,8 @@ import {
   type ExerciseRecord,
   STATUS_LABELS,
   GOAL_LABELS,
+  DAY_LABELS,
+  WORKOUT_TYPE_LABELS,
   MUSCLE_GROUP_LABELS,
   updateWorkout,
   deleteWorkout,
@@ -369,6 +371,20 @@ export function WorkoutDetailDialog({
               <Repeat className="w-3 h-3 mr-1" />
               {GOAL_LABELS[goal]}
             </Badge>
+            {workout.day_of_week && (
+              <Badge
+                variant="outline"
+                className="border-[#A3E635]/30 bg-[#A3E635]/10 text-[#A3E635]"
+              >
+                <Calendar className="w-3 h-3 mr-1" />
+                {DAY_LABELS[workout.day_of_week]}
+              </Badge>
+            )}
+            {workout.workout_type && (
+              <Badge variant="outline" className="border-[#262635] bg-[#0B0B10] text-slate-300">
+                {WORKOUT_TYPE_LABELS[workout.workout_type]}
+              </Badge>
+            )}
           </div>
 
           {/* Lista de exercícios editáveis */}

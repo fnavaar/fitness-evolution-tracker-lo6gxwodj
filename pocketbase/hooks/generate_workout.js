@@ -12,14 +12,9 @@ routerAdd('POST', '/backend/v1/generate-workout', (e) => {
   const equipment = body.equipment || ''
   const notes = body.notes || ''
 
-  // Deriva dias/semana a partir da duração estimada quando não informado.
-  const durationToDays = {
-    30: 3,
-    45: 4,
-    60: 4,
-    90: 5,
-  }
-  const daysPerWeek = Number(body.daysPerWeek || durationToDays[duration] || 4)
+  const durationToDays = { 30: 3, 45: 4, 60: 4, 90: 5 }
+  const requestedDays = Number(body.daysPerWeek || durationToDays[duration] || 4)
+  const daysPerWeek = Math.min(7, Math.max(1, requestedDays))
 
   const levelLabel =
     {
@@ -29,16 +24,12 @@ routerAdd('POST', '/backend/v1/generate-workout', (e) => {
     }[level] || 'intermediário'
 
   const extraContext = []
-  if (equipment) {
-    extraContext.push('Equipamentos disponíveis: ' + equipment + '.')
-  }
-  if (notes) {
-    extraContext.push('Restrições/observações do usuário: ' + notes + '.')
-  }
+  if (equipment) extraContext.push('Equipamentos disponíveis: ' + equipment + '.')
+  if (notes) extraContext.push('Restrições/observações do usuário: ' + notes + '.')
   const extra = extraContext.length ? ' ' + extraContext.join(' ') : ''
 
   const prompt =
-    'Crie um plano de treino em formato JSON rigoroso para um usuário com objetivo de "' +
+    'Crie uma semana de treino em formato JSON rigoroso para um usuário com objetivo de "' +
     goal +
     '", nível ' +
     levelLabel +
@@ -48,35 +39,43 @@ routerAdd('POST', '/backend/v1/generate-workout', (e) => {
     daysPerWeek +
     ' dias por semana.' +
     extra +
-    '\nResponda EXATAMENTE e APENAS com um objeto JSON válido sem formatação markdown em volta, no seguinte formato:\n' +
+    '\nResponda EXATAMENTE e APENAS com um objeto JSON válido sem markdown no formato:\n' +
     '{\n' +
-    '  "title": "Nome descritivo do plano em PT-BR",\n' +
-    '  "description": "Breve explicação da metodologia do treino em PT-BR",\n' +
-    '  "exercises": [\n' +
+    '  "title": "Nome da semana em PT-BR",\n' +
+    '  "description": "Explicação geral da metodologia em PT-BR",\n' +
+    '  "days": [\n' +
     '    {\n' +
-    '      "name": "Nome do exercício em PT-BR",\n' +
-    '      "muscle_group": "peito" | "costas" | "pernas" | "ombros" | "bracos" | "core" | "gluteos",\n' +
-    '      "equipment": "halteres" | "barra" | "maquina" | "peso_corporal" | "cabos",\n' +
-    '      "difficulty": "iniciante" | "intermediario" | "avancado",\n' +
-    '      "instructions": "Instruções passo a passo de execução em PT-BR",\n' +
-    '      "sets": 4,\n' +
-    '      "reps": "8-12",\n' +
-    '      "rest_time": 60\n' +
+    '      "day_of_week": "segunda" | "terca" | "quarta" | "quinta" | "sexta" | "sabado" | "domingo",\n' +
+    '      "workout_type": "full_body" | "upper" | "lower" | "push" | "pull" | "legs" | "cardio" | "mobilidade" | "core",\n' +
+    '      "title": "Nome da sessão",\n' +
+    '      "description": "Como executar a sessão e qual é o foco",\n' +
+    '      "exercises": [\n' +
+    '        {\n' +
+    '          "name": "Nome do exercício em PT-BR",\n' +
+    '          "muscle_group": "peito" | "costas" | "pernas" | "ombros" | "bracos" | "core" | "gluteos",\n' +
+    '          "equipment": "halteres" | "barra" | "maquina" | "peso_corporal" | "cabos",\n' +
+    '          "difficulty": "iniciante" | "intermediario" | "avancado",\n' +
+    '          "instructions": "Instruções passo a passo de execução em PT-BR",\n' +
+    '          "sets": 4,\n' +
+    '          "reps": "8-12",\n' +
+    '          "rest_time": 60\n' +
+    '        }\n' +
+    '      ]\n' +
     '    }\n' +
     '  ]\n' +
     '}\n' +
-    'A dificuldade dos exercícios deve ser coerente com o nível ' +
+    'Gere exatamente ' +
+    daysPerWeek +
+    ' sessões, uma por dia, com 3 a 8 exercícios em cada sessão. Distribua os grupos musculares, informe como executar cada exercício e mantenha a dificuldade coerente com o nível ' +
     levelLabel +
-    '. Inclua entre 5 e 8 exercícios variados e focados no objetivo, ajustando séries, repetições e descanso à duração de ' +
-    duration +
-    ' minutos.'
+    '.'
 
   const response = $ai.chat(
     [
       {
         role: 'system',
         content:
-          'Você é um gerador de treinos em formato JSON rigoroso. Responda apenas com o JSON.',
+          'Você é um gerador de semanas de treino em JSON rigoroso. Responda apenas com JSON.',
       },
       { role: 'user', content: prompt },
     ],
@@ -86,57 +85,114 @@ routerAdd('POST', '/backend/v1/generate-workout', (e) => {
   let plan
   try {
     let cleanText = response.text.trim()
-    if (cleanText.startsWith('```json')) {
+    const fence = String.fromCharCode(96).repeat(3)
+    if (cleanText.startsWith(fence + 'json')) {
       cleanText = cleanText
-        .replace(/^```json/, '')
-        .replace(/```$/, '')
+        .slice((fence + 'json').length)
+        .replace(new RegExp(fence + '$'), '')
         .trim()
-    } else if (cleanText.startsWith('```')) {
-      cleanText = cleanText.replace(/^```/, '').replace(/```$/, '').trim()
+    } else if (cleanText.startsWith(fence)) {
+      cleanText = cleanText
+        .slice(fence.length)
+        .replace(new RegExp(fence + '$'), '')
+        .trim()
     }
     plan = JSON.parse(cleanText)
-  } catch (err) {
+  } catch (_) {
     return e.json(500, { error: 'Erro ao processar plano gerado pela IA.' })
   }
 
-  const workoutsCol = $app.findCollectionByNameOrId('workouts')
-  const exercisesCol = $app.findCollectionByNameOrId('exercises')
-  const workoutExercisesCol = $app.findCollectionByNameOrId('workout_exercises')
+  const defaultDays = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo']
+  const validTypes = [
+    'full_body',
+    'upper',
+    'lower',
+    'push',
+    'pull',
+    'legs',
+    'cardio',
+    'mobilidade',
+    'core',
+  ]
+  const sessions =
+    Array.isArray(plan.days) && plan.days.length > 0
+      ? plan.days.slice(0, 7)
+      : [
+          {
+            day_of_week: defaultDays[0],
+            workout_type: 'full_body',
+            title: plan.title || 'Treino Personalizado IA',
+            description: plan.description || 'Treino gerado por Inteligência Artificial.',
+            exercises: plan.exercises || [],
+          },
+        ]
 
-  const workout = new Record(workoutsCol)
-  workout.set('user_id', userId)
-  workout.set('title', plan.title || 'Treino Personalizado IA')
-  workout.set('description', plan.description || 'Treino gerado por Inteligência Artificial.')
-  workout.set('goal', goal)
-  workout.set('days_per_week', daysPerWeek)
-  workout.set('status', 'pendente')
-  $app.save(workout)
+  const ids = []
 
-  const exList = plan.exercises || []
-  for (let i = 0; i < exList.length; i++) {
-    const item = exList[i]
-    let exRecord
-    try {
-      exRecord = $app.findFirstRecordByData('exercises', 'name', item.name)
-    } catch (_) {
-      exRecord = new Record(exercisesCol)
-      exRecord.set('name', item.name)
-      exRecord.set('muscle_group', item.muscle_group || 'pernas')
-      exRecord.set('equipment', item.equipment || 'halteres')
-      exRecord.set('difficulty', item.difficulty || level || 'intermediario')
-      exRecord.set('instructions', item.instructions || 'Execute com técnica e foco na contração.')
-      $app.save(exRecord)
-    }
+  try {
+    $app.runInTransaction((txApp) => {
+      const txWorkoutsCol = txApp.findCollectionByNameOrId('workouts')
+      const txExercisesCol = txApp.findCollectionByNameOrId('exercises')
+      const txWorkoutExercisesCol = txApp.findCollectionByNameOrId('workout_exercises')
 
-    const we = new Record(workoutExercisesCol)
-    we.set('workout_id', workout.id)
-    we.set('exercise_id', exRecord.id)
-    we.set('sets', Number(item.sets || 3))
-    we.set('reps', String(item.reps || '10-12'))
-    we.set('rest_time', Number(item.rest_time || 60))
-    we.set('sort_order', i + 1)
-    $app.save(we)
+      for (let index = 0; index < sessions.length; index++) {
+        const session = sessions[index] || {}
+        const day = defaultDays[index] || 'segunda'
+        const exercises = Array.isArray(session.exercises) ? session.exercises : []
+        if (exercises.length === 0) continue
+
+        const workout = new Record(txWorkoutsCol)
+        workout.set('user_id', userId)
+        workout.set('title', session.title || (plan.title || 'Treino IA') + ' — ' + day)
+        workout.set(
+          'description',
+          session.description || plan.description || 'Sessão gerada por Inteligência Artificial.',
+        )
+        workout.set('goal', goal)
+        workout.set('days_per_week', sessions.length)
+        workout.set('status', 'pendente')
+        workout.set(
+          'day_of_week',
+          defaultDays.indexOf(session.day_of_week) >= 0 ? session.day_of_week : day,
+        )
+        workout.set(
+          'workout_type',
+          validTypes.indexOf(session.workout_type) >= 0 ? session.workout_type : 'full_body',
+        )
+        txApp.save(workout)
+        ids.push(workout.id)
+
+        for (let i = 0; i < exercises.length; i++) {
+          const item = exercises[i]
+          let exercise
+          try {
+            exercise = txApp.findFirstRecordByData('exercises', 'name', item.name)
+          } catch (_) {
+            exercise = new Record(txExercisesCol)
+            exercise.set('name', item.name)
+            exercise.set('muscle_group', item.muscle_group || 'pernas')
+            exercise.set('equipment', item.equipment || 'peso_corporal')
+            exercise.set('difficulty', item.difficulty || level)
+            exercise.set('instructions', item.instructions || 'Execute com técnica e controle.')
+            txApp.save(exercise)
+          }
+
+          const link = new Record(txWorkoutExercisesCol)
+          link.set('workout_id', workout.id)
+          link.set('exercise_id', exercise.id)
+          link.set('sets', Number(item.sets || 3))
+          link.set('reps', String(item.reps || '10-12'))
+          link.set('rest_time', Number(item.rest_time || 60))
+          link.set('sort_order', i + 1)
+          txApp.save(link)
+        }
+      }
+    })
+  } catch (err) {
+    return e.json(500, {
+      error: err && err.message ? err.message : 'Erro ao publicar a semana de treinos.',
+    })
   }
 
-  return e.json(200, { id: workout.id })
+  return e.json(200, { id: ids[0] || null, ids, sessions: ids.length })
 })

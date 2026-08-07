@@ -236,8 +236,10 @@ export default function Coach() {
           refreshConversations()
         }
 
-        // Se o coach criou um rascunho de prescrição, busca os pendentes
-        // e exibe apenas os ainda não vistos e criados nesta conversa.
+        // O draft é um handoff interno do Coach. Para treinos, publica
+        // automaticamente todas as sessões da semana após o turno concluído.
+        // Só deixamos o card visível quando a publicação falha ou quando o
+        // tipo ainda não possui materializador.
         if (user?.id && result.toolCalls.some((tc) => tc.name === 'coach_drafts' && tc.ok)) {
           setProposalLoading(true)
           try {
@@ -249,9 +251,39 @@ export default function Coach() {
               if (isNaN(created.getTime())) return true
               return created >= cutoff
             })
-            if (fresh.length > 0) {
-              fresh.forEach((d) => seenDraftIds.current.add(d.id))
-              setProposals((prev) => [...prev, ...fresh])
+
+            const pendingForManualReview: CoachDraft[] = []
+            let publishedSessions = 0
+
+            for (const draft of fresh) {
+              if (draft.type !== 'workout') {
+                pendingForManualReview.push(draft)
+                continue
+              }
+
+              try {
+                const result = await confirmDraft(draft.id)
+                seenDraftIds.current.add(draft.id)
+                publishedSessions += result.sessions || result.ids?.length || 1
+              } catch (err) {
+                console.error('Erro ao publicar semana do Coach:', err)
+                pendingForManualReview.push(draft)
+              }
+            }
+
+            if (pendingForManualReview.length > 0) {
+              pendingForManualReview.forEach((d) => seenDraftIds.current.add(d.id))
+              setProposals((prev) => [...prev, ...pendingForManualReview])
+            }
+
+            if (publishedSessions > 0) {
+              toast({
+                title: 'Semana de treinos criada!',
+                description:
+                  publishedSessions === 1
+                    ? 'Seu treino já está disponível em Meus Treinos.'
+                    : `${publishedSessions} sessões foram adicionadas em Meus Treinos.`,
+              })
             }
           } catch {
             /* best-effort */
@@ -395,7 +427,7 @@ export default function Coach() {
                 </div>
               )}
               {proposalLoading && isResponding && (
-                <p className="text-xs text-slate-500 text-center">Carregando proposta…</p>
+                <p className="text-xs text-slate-500 text-center">Publicando semana de treinos…</p>
               )}
               {isResponding &&
                 messages[messages.length - 1]?.role === 'assistant' &&

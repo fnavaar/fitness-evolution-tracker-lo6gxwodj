@@ -27,6 +27,28 @@ const GOAL_LABELS: Record<string, string> = {
   resistencia: 'Resistência',
 }
 
+const DAY_LABELS: Record<string, string> = {
+  segunda: 'Segunda',
+  terca: 'Terça',
+  quarta: 'Quarta',
+  quinta: 'Quinta',
+  sexta: 'Sexta',
+  sabado: 'Sábado',
+  domingo: 'Domingo',
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  full_body: 'Full body',
+  upper: 'Parte superior',
+  lower: 'Parte inferior',
+  push: 'Push',
+  pull: 'Pull',
+  legs: 'Pernas',
+  cardio: 'Cardio',
+  mobilidade: 'Mobilidade',
+  core: 'Core',
+}
+
 export function ProposalCard({ draft, onConfirm, onDiscard }: ProposalCardProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState<'confirm' | 'discard' | null>(null)
@@ -38,13 +60,25 @@ export function ProposalCard({ draft, onConfirm, onDiscard }: ProposalCardProps)
     goal?: string
     days_per_week?: number
     exercises?: DraftExercise[]
+    days?: Array<{
+      day_of_week?: string
+      workout_type?: string
+      title?: string
+      exercises?: DraftExercise[]
+    }>
   }
 
   const title = payload.title || 'Proposta de treino'
   const description = payload.description || ''
   const goal = payload.goal ? GOAL_LABELS[payload.goal] || payload.goal : ''
-  const days = typeof payload.days_per_week === 'number' ? payload.days_per_week : null
-  const exercises = Array.isArray(payload.exercises) ? payload.exercises : []
+  const daysPerWeek = typeof payload.days_per_week === 'number' ? payload.days_per_week : null
+  const days = Array.isArray(payload.days) ? payload.days : []
+  const exercises =
+    days.length > 0 && Array.isArray(days[0]?.exercises)
+      ? days[0].exercises
+      : Array.isArray(payload.exercises)
+        ? payload.exercises
+        : []
 
   const handleConfirm = async () => {
     setLoading('confirm')
@@ -95,7 +129,7 @@ export function ProposalCard({ draft, onConfirm, onDiscard }: ProposalCardProps)
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#262635] bg-[#12121A]">
         <span className="flex items-center gap-1.5 rounded-full bg-[#A3E635]/15 px-2.5 py-1 text-[11px] font-bold text-[#A3E635] uppercase tracking-wide">
           <Dumbbell className="w-3.5 h-3.5" />
-          Proposta de treino
+          {days.length > 1 ? 'Proposta de semana' : 'Proposta de treino'}
         </span>
         {confirmed && (
           <span className="flex items-center gap-1.5 rounded-full bg-[#A3E635] px-2.5 py-1 text-[11px] font-bold text-[#0B0B10] uppercase tracking-wide">
@@ -109,16 +143,16 @@ export function ProposalCard({ draft, onConfirm, onDiscard }: ProposalCardProps)
       <div className="px-4 py-3 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-base font-extrabold text-white leading-tight">{title}</h3>
-          {(goal || days) && (
+          {(goal || daysPerWeek) && (
             <div className="flex flex-wrap items-center gap-1.5 shrink-0">
               {goal && (
                 <span className="rounded-md bg-[#262635] px-2 py-0.5 text-[11px] font-semibold text-slate-300">
                   {goal}
                 </span>
               )}
-              {days && (
+              {daysPerWeek && (
                 <span className="rounded-md bg-[#262635] px-2 py-0.5 text-[11px] font-semibold text-slate-300">
-                  {days}x/semana
+                  {daysPerWeek}x/semana
                 </span>
               )}
             </div>
@@ -126,6 +160,25 @@ export function ProposalCard({ draft, onConfirm, onDiscard }: ProposalCardProps)
         </div>
 
         {description && <p className="text-sm text-slate-400 leading-relaxed">{description}</p>}
+
+        {days.length > 0 && (
+          <div className="grid grid-cols-2 gap-2">
+            {days.map((day, index) => (
+              <div
+                key={day.day_of_week || index}
+                className="rounded-lg border border-[#262635] bg-[#0B0B10]/60 px-3 py-2"
+              >
+                <p className="text-xs font-bold text-white">
+                  {DAY_LABELS[day.day_of_week || ''] || 'Sessão ' + (index + 1)}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  {TYPE_LABELS[day.workout_type || ''] || 'Treino personalizado'}
+                </p>
+                {day.title && <p className="mt-1 text-[11px] text-slate-500">{day.title}</p>}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Resumo dos exercícios */}
         {exercises.length > 0 && (

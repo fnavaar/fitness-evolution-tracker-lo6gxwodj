@@ -34,6 +34,8 @@ import {
   type MuscleGroup,
   STATUS_LABELS,
   GOAL_LABELS,
+  DAY_LABELS,
+  WORKOUT_TYPE_LABELS,
   MUSCLE_GROUP_LABELS,
   deleteWorkout,
 } from '@/services/workouts'
@@ -79,6 +81,10 @@ function WorkoutCardBase({ workout, onSeeDetails, onDeleted }: WorkoutCardProps)
 
   const primaryMuscle = exercises[0]?.expand?.exercise_id?.muscle_group || 'pernas'
   const MuscleIcon = MUSCLE_ICON[primaryMuscle] || Dumbbell
+  const dayLabel = workout.day_of_week ? DAY_LABELS[workout.day_of_week] : 'Plano geral'
+  const typeLabel = workout.workout_type
+    ? WORKOUT_TYPE_LABELS[workout.workout_type]
+    : 'Sessão personalizada'
 
   const createdLabel = format(new Date(workout.created), "dd 'de' MMM 'de' yyyy", {
     locale: ptBR,
@@ -102,6 +108,14 @@ function WorkoutCardBase({ workout, onSeeDetails, onDeleted }: WorkoutCardProps)
               {workout.title}
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">{createdLabel}</p>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <span className="rounded-md bg-[#A3E635]/10 px-2 py-0.5 text-[11px] font-semibold text-[#A3E635]">
+                {dayLabel}
+              </span>
+              <span className="rounded-md bg-[#262635] px-2 py-0.5 text-[11px] font-semibold text-slate-300">
+                {typeLabel}
+              </span>
+            </div>
           </div>
           <Badge
             variant="outline"
@@ -147,14 +161,21 @@ function WorkoutCardBase({ workout, onSeeDetails, onDeleted }: WorkoutCardProps)
             return (
               <div
                 key={item.id}
-                className="flex items-center justify-between gap-2 py-1.5 px-3 rounded-lg bg-[#0B0B10]/60 border border-[#262635]/60"
+                className="rounded-lg bg-[#0B0B10]/60 border border-[#262635]/60 px-3 py-2"
               >
-                <span className="text-xs font-medium text-slate-200 truncate">
-                  {ex?.name || 'Exercício'}
-                </span>
-                <span className="text-[11px] text-slate-400 shrink-0 font-mono">
-                  {item.sets}x{item.reps}
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-slate-200 truncate">
+                    {ex?.name || 'Exercício'}
+                  </span>
+                  <span className="text-[11px] text-slate-400 shrink-0 font-mono">
+                    {item.sets}x{item.reps}
+                  </span>
+                </div>
+                {ex?.instructions && (
+                  <p className="mt-1 text-[11px] leading-relaxed text-slate-500 line-clamp-2">
+                    Como executar: {ex.instructions}
+                  </p>
+                )}
               </div>
             )
           })}

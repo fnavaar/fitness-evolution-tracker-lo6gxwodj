@@ -34,7 +34,12 @@ export async function listPendingDrafts(userId: string): Promise<CoachDraft[]> {
  * Confirma um rascunho de treino no backend — materializa em
  * workouts + workout_exercises e marca o draft como "confirmado".
  */
-export async function confirmDraft(id: string): Promise<{ id: string; type: string }> {
+export async function confirmDraft(id: string): Promise<{
+  id: string
+  type: string
+  ids?: string[]
+  sessions?: number
+}> {
   return pb.send('/backend/v1/coach/drafts/' + id + '/confirm', { method: 'POST' })
 }
 
