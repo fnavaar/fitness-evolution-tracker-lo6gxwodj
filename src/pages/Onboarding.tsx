@@ -84,16 +84,13 @@ export default function Onboarding() {
         goal,
         current_weight: weight,
         height: heightCm,
-        birth_date: new Date(birthDate).toISOString(),
+        birth_date: new Date(`${birthDate}T12:00:00`).toISOString(),
         activity_level: activityLevel,
         training_frequency: freq,
         dietary_preference: dietaryPreference,
         restrictions: restrictions.trim() || '',
       })
 
-      // Seed do 1º registro de progresso com o peso informado no onboarding,
-      // para o dashboard (card "Peso Atual" + gráfico de evolução) já nascer
-      // com dados — o dashboard lê peso de `progress`, não de `profiles`.
       try {
         await pb.collection('progress').create({
           user_id: user.id,
@@ -123,7 +120,6 @@ export default function Onboarding() {
   return (
     <div className="w-full max-w-lg">
       <div className="rounded-2xl border border-[#262635] bg-[#12121A] p-6 md:p-8 shadow-xl">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-11 h-11 rounded-xl bg-[#A3E635]/10 text-[#A3E635] flex items-center justify-center">
             <Sparkles className="w-6 h-6" />
@@ -139,12 +135,10 @@ export default function Onboarding() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Seção 1 — Objetivo e treino */}
           <section className="space-y-4">
             <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500">
               Objetivo e treino
             </h2>
-
             <div className="space-y-2">
               <Label className="text-slate-200">Objetivo principal</Label>
               <Select value={goal} onValueChange={setGoal}>
@@ -160,7 +154,6 @@ export default function Onboarding() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label className="text-slate-200">Nível de atividade</Label>
               <Select value={activityLevel} onValueChange={setActivityLevel}>
@@ -176,7 +169,6 @@ export default function Onboarding() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label className="text-slate-200">
                 Frequência semanal <span className="text-slate-500 font-normal">(1–7 dias)</span>
@@ -193,12 +185,10 @@ export default function Onboarding() {
             </div>
           </section>
 
-          {/* Seção 2 — Medidas e alimentação */}
           <section className="space-y-4">
             <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500">
               Medidas e alimentação
             </h2>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-200">Peso atual (kg)</Label>
@@ -227,7 +217,6 @@ export default function Onboarding() {
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label className="text-slate-200">Data de nascimento</Label>
               <Input
@@ -238,7 +227,6 @@ export default function Onboarding() {
                 className="bg-[#0B0B10] border-[#262635] text-white [color-scheme:dark]"
               />
             </div>
-
             <div className="space-y-2">
               <Label className="text-slate-200">Preferência alimentar</Label>
               <Select value={dietaryPreference} onValueChange={setDietaryPreference}>
@@ -254,7 +242,6 @@ export default function Onboarding() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label className="text-slate-200">
                 Restrições / alergias <span className="text-slate-500 font-normal">(opcional)</span>
