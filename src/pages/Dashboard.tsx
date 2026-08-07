@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react'
-import { LayoutDashboard, AlertTriangle } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { LayoutDashboard, AlertTriangle, Plus } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import { useRealtime } from '@/hooks/use-realtime'
@@ -7,6 +7,7 @@ import { fetchDashboardData, type DashboardData } from '@/lib/dashboard'
 import { SummaryCards } from '@/components/dashboard/SummaryCards'
 import { ChartsSection } from '@/components/dashboard/Charts'
 import { QuickActions } from '@/components/dashboard/QuickActions'
+import { ProgressFormDialog } from '@/components/dashboard/ProgressFormDialog'
 import { Button } from '@/components/ui/button'
 
 const EMPTY_DATA: DashboardData = { progress: [], workoutLogs: [], diets: [], profile: null }
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData>(EMPTY_DATA)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [progressOpen, setProgressOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!user) return
@@ -44,8 +46,6 @@ export default function Dashboard() {
   }, [load])
 
   // Atualizações em tempo real — reflete progresso, treinos e dietas.
-  // As subscriptions só são criadas quando o usuário está autenticado
-  // e o cliente PocketBase tem um token válido (via useRealtime).
   const handleRealtime = () => {
     load()
   }
@@ -67,7 +67,15 @@ export default function Dashboard() {
             </h1>
             <p className="text-sm text-slate-400">Visão geral da sua evolução fitness</p>
           </div>
-        </div>{' '}
+        </div>
+
+        <Button
+          onClick={() => setProgressOpen(true)}
+          className="bg-[#A3E635] hover:bg-[#84CC16] text-[#0B0B10] font-bold rounded-xl shadow-lg shadow-[#A3E635]/20 transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          Registrar progresso
+        </Button>
       </div>
 
       {/* Estado de erro com retry */}
@@ -102,6 +110,14 @@ export default function Dashboard() {
           </section>
         </>
       )}
+
+      {/* Dialog de registro de progresso */}
+      <ProgressFormDialog
+        open={progressOpen}
+        onOpenChange={setProgressOpen}
+        onSaved={load}
+        defaultWeight={data.profile?.current_weight ?? null}
+      />
     </div>
   )
 }
