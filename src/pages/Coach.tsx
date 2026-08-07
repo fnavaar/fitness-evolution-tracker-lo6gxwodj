@@ -285,6 +285,17 @@ export default function Coach() {
                     : `${publishedSessions} sessões foram adicionadas em Meus Treinos.`,
               })
             }
+
+            // Fallback: o agente chamou a tool com ok:true, mas não achamos
+            // nenhum draft novo (create silenciosamente rejeitado por falta
+            // de user_id, por ex.). Avisa o usuário em vez de falhar mudo.
+            if (drafts.length === 0 && fresh.length === 0 && publishedSessions === 0) {
+              toast({
+                title: 'Treino em processamento',
+                description: 'O Coach preparou seu treino. Acesse Meus Treinos em instantes.',
+                variant: 'default',
+              })
+            }
           } catch {
             /* best-effort */
           } finally {
