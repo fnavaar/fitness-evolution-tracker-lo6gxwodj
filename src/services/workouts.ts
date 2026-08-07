@@ -88,6 +88,102 @@ export async function generateWorkout(input: GenerateWorkoutInput): Promise<stri
   return res?.id as string
 }
 
+/* ----------------- CRUD ----------------- */
+
+export interface UpdateWorkoutInput {
+  title?: string
+  description?: string
+  goal?: WorkoutGoal
+  days_per_week?: number
+  status?: WorkoutStatus
+}
+
+/**
+ * Atualiza um treino. Lança erro para o chamador tratar.
+ */
+export async function updateWorkout(id: string, data: UpdateWorkoutInput): Promise<void> {
+  await pb.collection('workouts').update(id, data)
+}
+
+/**
+ * Exclui um treino. Lança erro para o chamador tratar.
+ */
+export async function deleteWorkout(id: string): Promise<void> {
+  await pb.collection('workouts').delete(id)
+}
+
+export interface UpdateWorkoutExerciseInput {
+  sets?: number
+  reps?: string
+  rest_time?: number
+  sort_order?: number
+}
+
+/**
+ * Atualiza um item de exercício do treino.
+ */
+export async function updateWorkoutExercise(
+  id: string,
+  data: UpdateWorkoutExerciseInput,
+): Promise<void> {
+  await pb.collection('workout_exercises').update(id, data)
+}
+
+/**
+ * Exclui um item de exercício do treino.
+ */
+export async function deleteWorkoutExercise(id: string): Promise<void> {
+  await pb.collection('workout_exercises').delete(id)
+}
+
+/**
+ * Adiciona um exercício a um treino. Retorna o id do registro criado.
+ */
+export async function addWorkoutExercise(
+  workoutId: string,
+  exerciseId: string,
+  sets: number,
+  reps: string,
+  restTime: number,
+  sortOrder: number,
+): Promise<string> {
+  const record = await pb.collection('workout_exercises').create({
+    workout_id: workoutId,
+    exercise_id: exerciseId,
+    sets,
+    reps,
+    rest_time: restTime,
+    sort_order: sortOrder,
+  })
+  return record.id
+}
+
+/**
+ * Busca todos os exercícios disponíveis (collection `exercises`), ordenados por nome.
+ */
+export async function fetchExercises(): Promise<ExerciseRecord[]> {
+  const records = await pb.collection('exercises').getFullList({ sort: 'name' })
+  return records as unknown as ExerciseRecord[]
+}
+
+export interface WorkoutLogInput {
+  user_id: string
+  workout_id: string
+  exercise_id: string
+  date: string
+  weight_used: number
+  reps_completed: number
+  sets_completed: number
+  notes?: string
+}
+
+/**
+ * Cria um registro de treino realizado (workout_logs).
+ */
+export async function createWorkoutLog(data: WorkoutLogInput): Promise<void> {
+  await pb.collection('workout_logs').create(data)
+}
+
 /* ----------------- Helpers de UI ----------------- */
 
 export const GOAL_LABELS: Record<WorkoutGoal, string> = {

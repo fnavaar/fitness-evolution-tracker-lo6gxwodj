@@ -45,6 +45,9 @@ export default function Workouts() {
     try {
       const result = await fetchUserWorkouts(user.id)
       setWorkouts(result)
+      // Sincroniza o treino selecionado com a lista recarregada (realtime/mutações),
+      // ou fecha o detalhe caso tenha sido excluído.
+      setSelected((prev) => (prev ? (result.find((w) => w.id === prev.id) ?? null) : null))
     } catch (err) {
       console.error('Erro ao carregar treinos:', err)
       setError(true)
@@ -145,7 +148,7 @@ export default function Workouts() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {filtered.map((w) => (
-                <WorkoutCard key={w.id} workout={w} onSeeDetails={setSelected} />
+                <WorkoutCard key={w.id} workout={w} onSeeDetails={setSelected} onDeleted={load} />
               ))}
             </div>
           )}
@@ -162,6 +165,7 @@ export default function Workouts() {
         workout={selected}
         open={!!selected}
         onOpenChange={(v) => !v && setSelected(null)}
+        onMutated={load}
       />
     </div>
   )

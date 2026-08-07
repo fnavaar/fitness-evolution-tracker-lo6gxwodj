@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
@@ -11,11 +11,23 @@ import {
   Armchair,
   Flame,
   Layers,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   type WorkoutRecord,
   type WorkoutStatus,
@@ -23,11 +35,14 @@ import {
   STATUS_LABELS,
   GOAL_LABELS,
   MUSCLE_GROUP_LABELS,
+  deleteWorkout,
 } from '@/services/workouts'
+import { useToast } from '@/hooks/use-toast'
 
 interface WorkoutCardProps {
   workout: WorkoutRecord
   onSeeDetails: (workout: WorkoutRecord) => void
+  onDeleted?: () => void
 }
 
 const MUSCLE_ICON: Record<MuscleGroup, LucideIcon> = {
@@ -53,7 +68,11 @@ const GOAL_ACCENT: Record<string, string> = {
   resistencia: 'bg-[#A78BFA]/10 text-[#A78BFA]',
 }
 
-function WorkoutCardBase({ workout, onSeeDetails }: WorkoutCardProps) {
+function WorkoutCardBase({ workout, onSeeDetails, onDeleted }: WorkoutCardProps) {
+  const { toast } = useToast()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   const exercises = (workout.expand?.workout_exercises || [])
     .slice()
     .sort((a, b) => a.sort_order - b.sort_order)
@@ -90,6 +109,18 @@ function WorkoutCardBase({ workout, onSeeDetails }: WorkoutCardProps) {
           >
             {STATUS_LABELS[workout.status || 'pendente']}
           </Badge>
+
+          {/* Excluir — canto superior direito */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setConfirmOpen(true)}
+            className="shrink-0 h-8 w-8 text-slate-500 hover:text-red-400 hover:bg-red-500/10"
+            title="Excluir treino"
+            aria-label="Excluir treino"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
 
         {/* Descrição */}
@@ -147,6 +178,59 @@ function WorkoutCardBase({ workout, onSeeDetails }: WorkoutCardProps) {
           <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </Button>
       </CardContent>
+
+      {/* Confirmação de exclusão */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="bg-[#12121A] border-[#262635] text-white">
+          <AlertDialogHeader>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-white">Excluir treino?</AlertDialogTitle>
+                <AlertDialogDescription className="text-slate-400">
+                  Tem certeza? Esta ação não pode ser desfeita. Todos os exercícios vinculados
+                  também serão removidos.
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-[#262635] text-slate-300 hover:bg-[#1A1A24] rounded-xl">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={async (e) => {
+                e.preventDefault()
+                setIsDeleting(true)
+                try {
+                  await deleteWorkout(workout.id)
+                  toast({
+                    title: 'Treino excluído',
+                    description: 'O treino foi removido permanentemente.',
+                  })
+                  setConfirmOpen(false)
+                  onDeleted?.()
+                } catch (err) {
+                  console.error('Erro ao excluir treino:', err)
+                  toast({
+                    title: 'Erro ao excluir',
+                    description: 'Não foi possível excluir o treino. Tente novamente.',
+                    variant: 'destructive',
+                  })
+                } finally {
+                  setIsDeleting(false)
+                }
+              }}
+              className="bg-red-500 hover:bg-red-600 text-white rounded-xl"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }
