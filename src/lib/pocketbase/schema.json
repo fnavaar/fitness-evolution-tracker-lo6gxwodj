@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T19:39:06.624Z",
+  "generatedAt": "2026-08-07T20:11:59.915Z",
   "collections": [
     {
       "name": "users",
@@ -817,7 +817,7 @@
         {
           "name": "user_id",
           "type": "relation",
-          "required": true,
+          "required": false,
           "system": false,
           "collectionRef": "users"
         },
