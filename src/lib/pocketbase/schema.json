@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T11:26:49.811Z",
+  "generatedAt": "2026-08-07T11:57:25.517Z",
   "collections": [
     {
       "name": "users",
@@ -29,14 +29,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -67,7 +72,12 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["emagrecimento", "hipertrofia", "condicionamento", "resistencia"]
+          "selectValues": [
+            "emagrecimento",
+            "hipertrofia",
+            "condicionamento",
+            "resistencia"
+          ]
         },
         {
           "name": "current_weight",
@@ -92,7 +102,12 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["sedentario", "levemente_ativo", "moderadamente_ativo", "muito_ativo"]
+          "selectValues": [
+            "sedentario",
+            "levemente_ativo",
+            "moderadamente_ativo",
+            "muito_ativo"
+          ]
         },
         {
           "name": "training_frequency",
@@ -105,7 +120,11 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["onivoro", "vegetariano", "vegano"]
+          "selectValues": [
+            "onivoro",
+            "vegetariano",
+            "vegano"
+          ]
         },
         {
           "name": "restrictions",
@@ -118,14 +137,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "bio",
@@ -134,7 +158,9 @@
           "system": false
         }
       ],
-      "indexes": ["CREATE INDEX idx_profiles_user_id ON profiles (user_id)"]
+      "indexes": [
+        "CREATE INDEX idx_profiles_user_id ON profiles (user_id)"
+      ]
     },
     {
       "name": "exercises",
@@ -158,21 +184,39 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["peito", "costas", "pernas", "ombros", "bracos", "core", "gluteos"]
+          "selectValues": [
+            "peito",
+            "costas",
+            "pernas",
+            "ombros",
+            "bracos",
+            "core",
+            "gluteos"
+          ]
         },
         {
           "name": "equipment",
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["halteres", "barra", "maquina", "peso_corporal", "cabos"]
+          "selectValues": [
+            "halteres",
+            "barra",
+            "maquina",
+            "peso_corporal",
+            "cabos"
+          ]
         },
         {
           "name": "difficulty",
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["iniciante", "intermediario", "avancado"]
+          "selectValues": [
+            "iniciante",
+            "intermediario",
+            "avancado"
+          ]
         },
         {
           "name": "instructions",
@@ -199,17 +243,24 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
-      "indexes": ["CREATE INDEX idx_exercises_muscle_group ON exercises (muscle_group)"]
+      "indexes": [
+        "CREATE INDEX idx_exercises_muscle_group ON exercises (muscle_group)"
+      ]
     },
     {
       "name": "workouts",
@@ -246,7 +297,12 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["emagrecimento", "hipertrofia", "condicionamento", "resistencia"]
+          "selectValues": [
+            "emagrecimento",
+            "hipertrofia",
+            "condicionamento",
+            "resistencia"
+          ]
         },
         {
           "name": "days_per_week",
@@ -259,24 +315,35 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "status",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["pendente", "em_andamento", "concluido"]
+          "selectValues": [
+            "pendente",
+            "em_andamento",
+            "concluido"
+          ]
         }
       ],
-      "indexes": ["CREATE INDEX idx_workouts_user_id ON workouts (user_id)"]
+      "indexes": [
+        "CREATE INDEX idx_workouts_user_id ON workouts (user_id)"
+      ]
     },
     {
       "name": "workout_exercises",
@@ -332,14 +399,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -382,7 +454,12 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["emagrecimento", "hipertrofia", "condicionamento", "resistencia"]
+          "selectValues": [
+            "emagrecimento",
+            "hipertrofia",
+            "condicionamento",
+            "resistencia"
+          ]
         },
         {
           "name": "daily_calories",
@@ -413,21 +490,30 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "status",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["pendente", "em_andamento", "concluido"]
+          "selectValues": [
+            "pendente",
+            "em_andamento",
+            "concluido"
+          ]
         },
         {
           "name": "recipes",
@@ -437,7 +523,9 @@
           "collectionRef": "recipes"
         }
       ],
-      "indexes": ["CREATE INDEX idx_diets_user_id ON diets (user_id)"]
+      "indexes": [
+        "CREATE INDEX idx_diets_user_id ON diets (user_id)"
+      ]
     },
     {
       "name": "recipes",
@@ -467,7 +555,13 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["cafe_da_manha", "almoco", "jantar", "lanche", "shake"]
+          "selectValues": [
+            "cafe_da_manha",
+            "almoco",
+            "jantar",
+            "lanche",
+            "shake"
+          ]
         },
         {
           "name": "ingredients",
@@ -536,17 +630,24 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
-      "indexes": ["CREATE INDEX idx_recipes_category ON recipes (category)"]
+      "indexes": [
+        "CREATE INDEX idx_recipes_category ON recipes (category)"
+      ]
     },
     {
       "name": "progress",
@@ -619,14 +720,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -701,14 +807,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -764,14 +875,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
