@@ -1,13 +1,22 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { RefreshCw, AlertCircle } from 'lucide-react'
+import { RefreshCw, AlertCircle, Menu, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
-import { sendMessage, streamCoachChat, loadCoachContext, type ChatMessage } from '@/services/coach'
+import {
+  sendMessage,
+  streamCoachChat,
+  loadCoachContext,
+  listConversations,
+  loadMessages,
+  type ChatMessage,
+  type Conversation,
+} from '@/services/coach'
 import { CoachAvatar } from '@/components/coach/CoachAvatar'
 import { ChatMessage as ChatMessageBubble } from '@/components/coach/ChatMessage'
 import { ChatInput } from '@/components/coach/ChatInput'
 import { TypingIndicator } from '@/components/coach/TypingIndicator'
 import { WelcomeScreen } from '@/components/coach/WelcomeScreen'
+import { ConversationList } from '@/components/coach/ConversationList'
 
 interface CoachMessage extends ChatMessage {
   id: string
@@ -25,6 +34,13 @@ export default function Coach() {
   const [error, setError] = useState<string | null>(null)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [lastUserText, setLastUserText] = useState<string>('')
+
+  // Histórico de conversas
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [loadingConvs, setLoadingConvs] = useState(true)
+  const [convsError, setConvsError] = useState<string | null>(null)
+  const [loadingMessages, setLoadingMessages] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false) // drawer mobile
 
   const contextRef = useRef<string>('')
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -46,6 +62,25 @@ export default function Coach() {
     }
   }, [user?.id])
 
+  // Carrega a lista de conversas do usuário.
+  const refreshConversations = useCallback(async () => {
+    if (!user?.id) return
+    setLoadingConvs(true)
+    setConvsError(null)
+    try {
+      const list = await listConversations(50)
+      setConversations(list)
+    } catch (err) {
+      setConvsError(err instanceof Error ? err.message : 'Erro ao carregar conversas.')
+    } finally {
+      setLoadingConvs(false)
+    }
+  }, [user?.id])
+
+  useEffect(() => {
+    refreshConversations()
+  }, [refreshConversations])
+
   // Auto-scroll para o final a cada nova mensagem / chunk.
   const scrollToBottom = useCallback(() => {
     const el = scrollRef.current
@@ -55,6 +90,48 @@ export default function Coach() {
   useEffect(() => {
     scrollToBottom()
   }, [messages, isResponding, scrollToBottom])
+
+  // Inicia uma nova conversa: limpa o chat e volta ao WelcomeScreen.
+  const handleNewConversation = useCallback(() => {
+    abortRef.current?.abort()
+    setConversationId(null)
+    setMessages([])
+    setError(null)
+    setLastUserText('')
+    setSidebarOpen(false)
+  }, [])
+
+  // Carrega uma conversa anterior no chat principal.
+  const handleSelectConversation = useCallback(
+    async (id: string) => {
+      if (id === conversationId) {
+        setSidebarOpen(false)
+        return
+      }
+      abortRef.current?.abort()
+      setConversationId(id)
+      setMessages([])
+      setError(null)
+      setLastUserText('')
+      setLoadingMessages(true)
+      setSidebarOpen(false)
+      try {
+        const hist = await loadMessages(id)
+        setMessages(
+          hist.map((m) => ({
+            id: uid(),
+            role: m.role,
+            content: m.content,
+          })),
+        )
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao carregar mensagens.')
+      } finally {
+        setLoadingMessages(false)
+      }
+    },
+    [conversationId],
+  )
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -80,6 +157,9 @@ export default function Coach() {
       // Envia contexto apenas na primeira mensagem da conversa.
       const isFirstMessage = conversationId === null
       const context = isFirstMessage ? contextRef.current : ''
+
+      // Rastreia se esta é uma conversa nova para atualizar a sidebar depois.
+      const wasNewConversation = conversationId === null
 
       try {
         const res = await sendMessage(
@@ -116,6 +196,11 @@ export default function Coach() {
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantId ? { ...m, streaming: false } : m)),
         )
+
+        // Se era uma conversa nova, atualiza a sidebar para refleti-la.
+        if (wasNewConversation) {
+          refreshConversations()
+        }
       } catch (err) {
         // Abort silencioso.
         if (err instanceof DOMException && err.name === 'AbortError') {
@@ -143,7 +228,7 @@ export default function Coach() {
         abortRef.current = null
       }
     },
-    [user, isResponding, messages, conversationId, toast],
+    [user, isResponding, messages, conversationId, toast, refreshConversations],
   )
 
   const handleRetry = useCallback(() => {
@@ -153,61 +238,117 @@ export default function Coach() {
 
   const hasMessages = messages.length > 0
 
+  const sidebar = (
+    <ConversationList
+      conversations={conversations}
+      activeId={conversationId}
+      loading={loadingConvs}
+      error={convsError}
+      onSelect={handleSelectConversation}
+      onNew={handleNewConversation}
+      onRetry={refreshConversations}
+    />
+  )
+
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-2rem)] max-w-3xl mx-auto w-full">
-      {/* Header */}
-      <header className="flex items-center gap-3 px-1 py-3 border-b border-[#262635]">
-        <CoachAvatar size="md" />
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-extrabold text-white tracking-tight">Coach Rocha</h1>
-            <span className="w-2 h-2 rounded-full bg-[#A3E635] shadow-[0_0_8px_rgba(163,230,53,0.6)]" />
-          </div>
-          <p className="text-xs text-slate-400">Seu personal trainer virtual</p>
-        </div>
-      </header>
+    <div className="flex h-[calc(100vh-4rem)] md:h-[calc(100vh-2rem)] w-full max-w-5xl mx-auto">
+      {/* Sidebar desktop */}
+      <aside className="hidden md:flex w-[280px] shrink-0 flex-col border-r border-[#262635] bg-[#0B0B10]">
+        {sidebar}
+      </aside>
 
-      {/* Mensagens / Welcome */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto py-4 space-y-4 px-1">
-        {!hasMessages ? (
-          <WelcomeScreen onSuggestion={handleSend} disabled={isResponding} />
-        ) : (
-          <>
-            {messages.map((m) => (
-              <ChatMessageBubble key={m.id} message={m} />
-            ))}
-            {isResponding &&
-              messages[messages.length - 1]?.role === 'assistant' &&
-              !messages[messages.length - 1]?.content && <TypingIndicator />}
-          </>
-        )}
-      </div>
-
-      {/* Erro inline */}
-      {error && (
-        <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5">
-          <div className="flex items-center gap-2 text-sm text-red-300">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleRetry}
-            disabled={isResponding}
-            className="flex items-center gap-1.5 text-xs font-semibold text-red-200 hover:text-white transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Tentar novamente
-          </button>
+      {/* Sidebar mobile (drawer) */}
+      {sidebarOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <aside className="relative w-[280px] max-w-[80vw] h-full flex flex-col border-r border-[#262635] bg-[#0B0B10] animate-coach-drawer-in">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#1A1A24] transition-colors"
+              aria-label="Fechar histórico"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            {sidebar}
+          </aside>
         </div>
       )}
 
-      {/* Input fixo */}
-      <div className="pt-2 pb-1">
-        <ChatInput onSend={handleSend} disabled={isResponding} />
-        <p className="mt-1.5 text-center text-[11px] text-slate-600">
-          O Coach Rocha pode cometer erros. Não substitui acompanhamento profissional.
-        </p>
+      {/* Área de chat principal */}
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* Header */}
+        <header className="flex items-center gap-3 px-1 py-3 border-b border-[#262635]">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1A1A24] transition-colors"
+            aria-label="Abrir histórico"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <CoachAvatar size="md" />
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-extrabold text-white tracking-tight truncate">
+                Coach Rocha
+              </h1>
+              <span className="w-2 h-2 rounded-full bg-[#A3E635] shadow-[0_0_8px_rgba(163,230,53,0.6)] shrink-0" />
+            </div>
+            <p className="text-xs text-slate-400 truncate">Seu personal trainer virtual</p>
+          </div>
+        </header>
+
+        {/* Mensagens / Welcome / Loading histórico */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto py-4 space-y-4 px-1">
+          {loadingMessages ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-500">
+              <RefreshCw className="w-5 h-5 animate-spin mb-2" />
+              <p className="text-sm">Carregando conversa…</p>
+            </div>
+          ) : !hasMessages ? (
+            <WelcomeScreen onSuggestion={handleSend} disabled={isResponding} />
+          ) : (
+            <>
+              {messages.map((m) => (
+                <ChatMessageBubble key={m.id} message={m} />
+              ))}
+              {isResponding &&
+                messages[messages.length - 1]?.role === 'assistant' &&
+                !messages[messages.length - 1]?.content && <TypingIndicator />}
+            </>
+          )}
+        </div>
+
+        {/* Erro inline */}
+        {error && (
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5">
+            <div className="flex items-center gap-2 text-sm text-red-300">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={isResponding}
+              className="flex items-center gap-1.5 text-xs font-semibold text-red-200 hover:text-white transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {/* Input fixo */}
+        <div className="pt-2 pb-1">
+          <ChatInput onSend={handleSend} disabled={isResponding || loadingMessages} />
+          <p className="mt-1.5 text-center text-[11px] text-slate-600">
+            O Coach Rocha pode cometer erros. Não substitui acompanhamento profissional.
+          </p>
+        </div>
       </div>
     </div>
   )

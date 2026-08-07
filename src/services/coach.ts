@@ -66,6 +66,121 @@ export async function streamCoachChat(
   return streamAgentChat(res, handlers)
 }
 
+/* ----------------- Histórico de conversas ----------------- */
+
+export interface Conversation {
+  id: string
+  title: string // primeira mensagem do usuário
+  created: string // ISO date
+  updated: string
+}
+
+export interface RawAgentMessage {
+  id: string
+  role: 'user' | 'assistant' | 'tool'
+  content: string
+  created: string
+}
+
+/**
+ * Lista as conversas anteriores do usuário autenticado com o agente
+ * fitness-coach, mais recentes primeiro.
+ */
+export async function listConversations(limit = 50): Promise<Conversation[]> {
+  const res = await fetch(
+    `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/coach/conversations?limit=${limit}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: pb.authStore.token || '',
+      },
+    },
+  )
+  if (!res.ok) {
+    let msg = 'Não foi possível carregar suas conversas.'
+    try {
+      const body = await res.json()
+      if (typeof body?.error === 'string') msg = body.error
+    } catch {
+      /* ignora */
+    }
+    throw new Error(msg)
+  }
+  const data = await res.json()
+  // A resposta do runtime é um array; normalizamos campos.
+  const list = Array.isArray(data)
+    ? data
+    : Array.isArray((data as { conversations?: unknown })?.conversations)
+      ? (data as { conversations: unknown[] }).conversations
+      : []
+  return (list as Record<string, unknown>[]).map((c) => {
+    const title =
+      (typeof c.title === 'string' && c.title) ||
+      (typeof c.first_message === 'string' && c.first_message) ||
+      (typeof c.last_message === 'string' && c.last_message) ||
+      'Conversa'
+    return {
+      id: String(c.id ?? c.conversation_id ?? ''),
+      title,
+      created: typeof c.created === 'string' ? c.created : String(c.created ?? ''),
+      updated:
+        typeof c.updated === 'string'
+          ? c.updated
+          : typeof c.created === 'string'
+            ? c.created
+            : String(c.updated ?? ''),
+    }
+  })
+}
+
+/**
+ * Carrega as mensagens de uma conversa anterior, filtrando apenas as
+ * mensagens exibíveis (role user/assistant com conteúdo).
+ */
+export async function loadMessages(conversationId: string): Promise<ChatMessage[]> {
+  const res = await fetch(
+    `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/coach/conversations/${encodeURIComponent(
+      conversationId,
+    )}/messages`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: pb.authStore.token || '',
+      },
+    },
+  )
+  if (!res.ok) {
+    let msg = 'Não foi possível carregar as mensagens.'
+    try {
+      const body = await res.json()
+      if (typeof body?.error === 'string') msg = body.error
+    } catch {
+      /* ignora */
+    }
+    throw new Error(msg)
+  }
+  const data = await res.json()
+  // Resposta pode ser um array de mensagens ou { messages: [...] }.
+  const raw = Array.isArray(data)
+    ? (data as RawAgentMessage[])
+    : Array.isArray((data as { messages?: unknown })?.messages)
+      ? (data as { messages: RawAgentMessage[] }).messages
+      : []
+
+  return raw
+    .filter(
+      (m) =>
+        (m.role === 'user' || m.role === 'assistant') &&
+        typeof m.content === 'string' &&
+        m.content.length > 0,
+    )
+    .map((m) => ({
+      id: String(m.id ?? ''),
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.content,
+    }))
+}
+
 /* ----------------- Personalização ----------------- */
 
 const GOAL_LABELS: Record<string, string> = {
