@@ -11,12 +11,19 @@ import {
   type ChatMessage,
   type Conversation,
 } from '@/services/coach'
+import {
+  listPendingDrafts,
+  confirmDraft,
+  discardDraft,
+  type CoachDraft,
+} from '@/services/coachDrafts'
 import { CoachAvatar } from '@/components/coach/CoachAvatar'
 import { ChatMessage as ChatMessageBubble } from '@/components/coach/ChatMessage'
 import { ChatInput } from '@/components/coach/ChatInput'
 import { TypingIndicator } from '@/components/coach/TypingIndicator'
 import { WelcomeScreen } from '@/components/coach/WelcomeScreen'
 import { ConversationList } from '@/components/coach/ConversationList'
+import { ProposalCard } from '@/components/coach/ProposalCard'
 
 interface CoachMessage extends ChatMessage {
   id: string
@@ -41,6 +48,12 @@ export default function Coach() {
   const [convsError, setConvsError] = useState<string | null>(null)
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false) // drawer mobile
+
+  // Propostas (rascunhos de prescrição) do Coach dentro do chat.
+  const [proposals, setProposals] = useState<CoachDraft[]>([])
+  const [proposalLoading, setProposalLoading] = useState(false)
+  const seenDraftIds = useRef<Set<string>>(new Set())
+  const conversationStartRef = useRef<Date>(new Date())
 
   const contextRef = useRef<string>('')
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -89,7 +102,7 @@ export default function Coach() {
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages, isResponding, scrollToBottom])
+  }, [messages, isResponding, proposals, scrollToBottom])
 
   // Inicia uma nova conversa: limpa o chat e volta ao WelcomeScreen.
   const handleNewConversation = useCallback(() => {
@@ -98,6 +111,9 @@ export default function Coach() {
     setMessages([])
     setError(null)
     setLastUserText('')
+    setProposals([])
+    seenDraftIds.current = new Set()
+    conversationStartRef.current = new Date()
     setSidebarOpen(false)
   }, [])
 
@@ -113,6 +129,9 @@ export default function Coach() {
       setMessages([])
       setError(null)
       setLastUserText('')
+      setProposals([])
+      seenDraftIds.current = new Set()
+      conversationStartRef.current = new Date()
       setLoadingMessages(true)
       setSidebarOpen(false)
       try {
@@ -178,7 +197,7 @@ export default function Coach() {
         const headerConv = res.headers.get('X-Conversation-Id')
         if (headerConv) setConversationId(headerConv)
 
-        await streamCoachChat(res, {
+        const result = await streamCoachChat(res, {
           onChunk: (_delta, full) => {
             setMessages((prev) =>
               prev.map((m) =>
@@ -200,6 +219,30 @@ export default function Coach() {
         // Se era uma conversa nova, atualiza a sidebar para refleti-la.
         if (wasNewConversation) {
           refreshConversations()
+        }
+
+        // Se o coach criou um rascunho de prescrição, busca os pendentes
+        // e exibe apenas os ainda não vistos e criados nesta conversa.
+        if (user?.id && result.toolCalls.some((tc) => tc.name === 'coach_drafts' && tc.ok)) {
+          setProposalLoading(true)
+          try {
+            const drafts = await listPendingDrafts(user.id)
+            const cutoff = conversationStartRef.current
+            const fresh = drafts.filter((d) => {
+              if (seenDraftIds.current.has(d.id)) return false
+              const created = new Date(d.created)
+              if (isNaN(created.getTime())) return true
+              return created >= cutoff
+            })
+            if (fresh.length > 0) {
+              fresh.forEach((d) => seenDraftIds.current.add(d.id))
+              setProposals((prev) => [...prev, ...fresh])
+            }
+          } catch {
+            /* best-effort */
+          } finally {
+            setProposalLoading(false)
+          }
         }
       } catch (err) {
         // Abort silencioso.
@@ -316,6 +359,29 @@ export default function Coach() {
               {messages.map((m) => (
                 <ChatMessageBubble key={m.id} message={m} />
               ))}
+              {proposals.length > 0 && !isResponding && (
+                <div className="space-y-3">
+                  {proposals.map((draft) => (
+                    <ProposalCard
+                      key={draft.id}
+                      draft={draft}
+                      onConfirm={async (id) => {
+                        await confirmDraft(id)
+                        setProposals((prev) =>
+                          prev.map((d) => (d.id === id ? { ...d, status: 'confirmado' } : d)),
+                        )
+                      }}
+                      onDiscard={async (id) => {
+                        await discardDraft(id)
+                        setProposals((prev) => prev.filter((d) => d.id !== id))
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+              {proposalLoading && isResponding && (
+                <p className="text-xs text-slate-500 text-center">Carregando proposta…</p>
+              )}
               {isResponding &&
                 messages[messages.length - 1]?.role === 'assistant' &&
                 !messages[messages.length - 1]?.content && <TypingIndicator />}

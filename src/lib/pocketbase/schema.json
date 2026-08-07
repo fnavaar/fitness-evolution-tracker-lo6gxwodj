@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T12:12:12.926Z",
+  "generatedAt": "2026-08-07T12:53:17.256Z",
   "collections": [
     {
       "name": "users",
@@ -778,6 +778,67 @@
         "CREATE INDEX idx_cardio_user_id ON cardio_logs (user_id)",
         "CREATE INDEX idx_cardio_date ON cardio_logs (date DESC)"
       ]
+    },
+    {
+      "name": "coach_drafts",
+      "type": "base",
+      "apiRules": {
+        "list": "user_id = @request.auth.id",
+        "view": "user_id = @request.auth.id",
+        "create": "user_id = @request.auth.id",
+        "update": "user_id = @request.auth.id",
+        "delete": "user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["workout", "diet", "recipe"]
+        },
+        {
+          "name": "payload",
+          "type": "json",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["proposta", "confirmado", "descartado"]
+        },
+        {
+          "name": "source_conversation_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_coach_drafts_user_id ON coach_drafts (user_id)"]
     }
   ]
 }
