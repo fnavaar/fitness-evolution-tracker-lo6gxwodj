@@ -59,6 +59,14 @@ export default function Coach() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
+  // Espelho sempre atual de `conversationId` para uso dentro de `handleSend`
+  // sem depender do valor capturado pela closure (evita stale state que fazia
+  // cada mensagem reenviar conversation_id null e criar uma conversa nova).
+  const conversationIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    conversationIdRef.current = conversationId
+  }, [conversationId])
+
   // Carrega o contexto de personalização uma vez por usuário.
   useEffect(() => {
     if (!user?.id) return
@@ -107,6 +115,7 @@ export default function Coach() {
   // Inicia uma nova conversa: limpa o chat e volta ao WelcomeScreen.
   const handleNewConversation = useCallback(() => {
     abortRef.current?.abort()
+    conversationIdRef.current = null
     setConversationId(null)
     setMessages([])
     setError(null)
@@ -118,39 +127,37 @@ export default function Coach() {
   }, [])
 
   // Carrega uma conversa anterior no chat principal.
-  const handleSelectConversation = useCallback(
-    async (id: string) => {
-      if (id === conversationId) {
-        setSidebarOpen(false)
-        return
-      }
-      abortRef.current?.abort()
-      setConversationId(id)
-      setMessages([])
-      setError(null)
-      setLastUserText('')
-      setProposals([])
-      seenDraftIds.current = new Set()
-      conversationStartRef.current = new Date()
-      setLoadingMessages(true)
+  const handleSelectConversation = useCallback(async (id: string) => {
+    if (id === conversationId) {
       setSidebarOpen(false)
-      try {
-        const hist = await loadMessages(id)
-        setMessages(
-          hist.map((m) => ({
-            id: uid(),
-            role: m.role,
-            content: m.content,
-          })),
-        )
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao carregar mensagens.')
-      } finally {
-        setLoadingMessages(false)
-      }
-    },
-    [conversationId],
-  )
+      return
+    }
+    abortRef.current?.abort()
+    conversationIdRef.current = id
+    setConversationId(id)
+    setMessages([])
+    setError(null)
+    setLastUserText('')
+    setProposals([])
+    seenDraftIds.current = new Set()
+    conversationStartRef.current = new Date()
+    setLoadingMessages(true)
+    setSidebarOpen(false)
+    try {
+      const hist = await loadMessages(id)
+      setMessages(
+        hist.map((m) => ({
+          id: uid(),
+          role: m.role,
+          content: m.content,
+        })),
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar mensagens.')
+    } finally {
+      setLoadingMessages(false)
+    }
+  }, [])
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -173,12 +180,15 @@ export default function Coach() {
       const controller = new AbortController()
       abortRef.current = controller
 
+      // Lê o conversationId do ref (sempre atual) para evitar stale closure.
+      const currentConvId = conversationIdRef.current
+
       // Envia contexto apenas na primeira mensagem da conversa.
-      const isFirstMessage = conversationId === null
+      const isFirstMessage = currentConvId === null
       const context = isFirstMessage ? contextRef.current : ''
 
       // Rastreia se esta é uma conversa nova para atualizar a sidebar depois.
-      const wasNewConversation = conversationId === null
+      const wasNewConversation = currentConvId === null
 
       try {
         const res = await sendMessage(
@@ -187,15 +197,20 @@ export default function Coach() {
             { role: 'user', content: text },
           ],
           {
-            conversationId,
+            conversationId: currentConvId,
             context,
             signal: controller.signal,
           },
         )
 
-        // Captura o conversation_id do header se disponível.
+        // Captura o conversation_id do header se disponível e sincroniza
+        // tanto o state quanto o ref imediatamente, para que a próxima
+        // mensagem (antes do re-render) já use o id correto.
         const headerConv = res.headers.get('X-Conversation-Id')
-        if (headerConv) setConversationId(headerConv)
+        if (headerConv) {
+          conversationIdRef.current = headerConv
+          setConversationId(headerConv)
+        }
 
         const result = await streamCoachChat(res, {
           onChunk: (_delta, full) => {
@@ -271,7 +286,7 @@ export default function Coach() {
         abortRef.current = null
       }
     },
-    [user, isResponding, messages, conversationId, toast, refreshConversations],
+    [user, isResponding, messages, toast, refreshConversations],
   )
 
   const handleRetry = useCallback(() => {
