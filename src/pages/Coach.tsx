@@ -283,7 +283,13 @@ export default function Coach() {
             lastUserText,
           )
         const coachCreatedDraft = result.toolCalls.some((tc) => tc.name === 'coach_drafts' && tc.ok)
-        if (user?.id && askedForWorkout && !coachCreatedDraft) {
+        // Se o Coach está em modo de triagem (pedindo info de saúde/equipamento),
+        // NÃO dispara o Especialista — gerar sem triagem viola a segurança.
+        const coachAskingInfo =
+          /(tem press|diabetes|cardíac|dor no peito|falta de ar|lesão|cirurgia|joelho|coluna|ombro|quadril|onde vai treinar|com o quê|equipamento|me responda|preciso saber|perguntas?|sinal)/i.test(
+            result.content || '',
+          )
+        if (user?.id && askedForWorkout && !coachCreatedDraft && !coachAskingInfo) {
           setProposalLoading(true)
           try {
             // Envia ao Especialista para gerar a partir do pedido do atleta.
