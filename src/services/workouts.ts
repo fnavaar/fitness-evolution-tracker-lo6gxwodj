@@ -293,3 +293,64 @@ export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   core: 'Core',
   gluteos: 'Glúteos',
 }
+
+/* ----------------- Especialista de Treinos ----------------- */
+
+export interface SpecialistChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
+
+/**
+ * Consome o stream SSE do Especialista de Treinos, chamando os handlers
+ * a cada chunk. Resolve quando o turno termina (`done`); lança em
+ * abort/erro. Retorna o conversation_id da conversa (nova ou existente).
+ */
+export async function streamSpecialistChat(
+  res: Response,
+  handlers: {
+    onChunk?: (deltaText: string, accumulatedText: string) => void
+    onError?: (message: string) => void
+    signal?: AbortSignal
+  },
+): Promise<{ conversationId: string; content: string }> {
+  const { streamAgentChat } = await import('@/lib/skipAi')
+  const result = await streamAgentChat(res, {
+    onChunk: handlers.onChunk,
+    onError: handlers.onError,
+    signal: handlers.signal,
+  })
+  const conversationId = res.headers.get('X-Conversation-Id') ?? result.conversation_id
+  return { conversationId, content: result.content }
+}
+
+/**
+ * Envia uma mensagem ao Especialista de Treinos (agente workout-specialist)
+ * no backend e devolve a `Response` bruta (SSE) para ser consumida via
+ * `streamSpecialistChat`.
+ *
+ * O runtime do agente mantém o histórico da conversa server-side (por
+ * `conversation_id`), então enviamos apenas a nova mensagem do usuário.
+ */
+export async function sendSpecialistMessage(
+  message: string,
+  opts: { conversationId?: string | null; signal?: AbortSignal } = {},
+): Promise<Response> {
+  const res = await fetch(
+    `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/workout-specialist/chat`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: pb.authStore.token || '',
+      },
+      body: JSON.stringify({
+        message,
+        conversation_id: opts.conversationId ?? null,
+      }),
+      signal: opts.signal,
+    },
+  )
+  return res
+}

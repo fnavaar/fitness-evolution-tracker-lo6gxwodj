@@ -13,12 +13,7 @@ import {
   type ChatMessage,
   type Conversation,
 } from '@/services/coach'
-import {
-  listPendingDrafts,
-  confirmDraft,
-  discardDraft,
-  type CoachDraft,
-} from '@/services/coachDrafts'
+import { listPendingDrafts, discardDraft, type CoachDraft } from '@/services/coachDrafts'
 import { CoachAvatar } from '@/components/coach/CoachAvatar'
 import { ChatMessage as ChatMessageBubble } from '@/components/coach/ChatMessage'
 import { ChatInput } from '@/components/coach/ChatInput'
@@ -238,10 +233,12 @@ export default function Coach() {
           refreshConversations()
         }
 
-        // O draft é um handoff interno do Coach. Para treinos, publica
-        // automaticamente todas as sessões da semana após o turno concluído.
-        // Só deixamos o card visível quando a publicação falha ou quando o
-        // tipo ainda não possui materializador.
+        // O draft é um handoff interno do Coach. Para treinos, o plano macro
+        // é enviado automaticamente ao Especialista de Treinos (hook
+        // workout_specialist_process), que o aprofunda em um treino completo
+        // diretamente no banco. Aqui apenas exibimos o card informativo
+        // (sem confirmação manual) para o atleta saber que o plano foi
+        // encaminhado — ele confere o resultado em /treinos.
         if (user?.id && result.toolCalls.some((tc) => tc.name === 'coach_drafts' && tc.ok)) {
           setProposalLoading(true)
           try {
@@ -254,44 +251,16 @@ export default function Coach() {
               return created >= cutoff
             })
 
-            const pendingForManualReview: CoachDraft[] = []
-            let publishedSessions = 0
-
-            for (const draft of fresh) {
-              if (draft.type !== 'workout') {
-                pendingForManualReview.push(draft)
-                continue
-              }
-
-              try {
-                const result = await confirmDraft(draft.id)
-                seenDraftIds.current.add(draft.id)
-                publishedSessions += result.sessions || result.ids?.length || 1
-              } catch (err) {
-                console.error('Erro ao publicar semana do Coach:', err)
-                pendingForManualReview.push(draft)
-              }
-            }
-
-            if (pendingForManualReview.length > 0) {
-              pendingForManualReview.forEach((d) => seenDraftIds.current.add(d.id))
-              setProposals((prev) => [...prev, ...pendingForManualReview])
-            }
-
-            if (publishedSessions > 0) {
+            if (fresh.length > 0) {
+              fresh.forEach((d) => seenDraftIds.current.add(d.id))
+              setProposals((prev) => [...prev, ...fresh])
               toast({
-                title: 'Semana de treinos criada!',
-                description:
-                  publishedSessions === 1
-                    ? 'Seu treino já está disponível em Meus Treinos.'
-                    : `${publishedSessions} sessões foram adicionadas em Meus Treinos.`,
+                title: 'Plano enviado ao Especialista de Treinos',
+                description: 'Seu treino está sendo gerado. Confira em /treinos!',
               })
-            }
-
-            // Fallback: o agente chamou a tool com ok:true, mas não achamos
-            // nenhum draft novo (create silenciosamente rejeitado por falta
-            // de user_id, por ex.). Avisa o usuário em vez de falhar mudo.
-            if (drafts.length === 0 && fresh.length === 0 && publishedSessions === 0) {
+            } else {
+              // Fallback: o agente chamou a tool com ok:true, mas não achamos
+              // nenhum draft novo (create silenciosamente rejeitado, por ex.).
               toast({
                 title: 'Treino em processamento',
                 description: 'O Coach preparou seu treino. Acesse Meus Treinos em instantes.',
@@ -467,12 +436,6 @@ export default function Coach() {
                     <ProposalCard
                       key={draft.id}
                       draft={draft}
-                      onConfirm={async (id) => {
-                        await confirmDraft(id)
-                        setProposals((prev) =>
-                          prev.map((d) => (d.id === id ? { ...d, status: 'confirmado' } : d)),
-                        )
-                      }}
                       onDiscard={async (id) => {
                         await discardDraft(id)
                         setProposals((prev) => prev.filter((d) => d.id !== id))
@@ -482,7 +445,9 @@ export default function Coach() {
                 </div>
               )}
               {proposalLoading && isResponding && (
-                <p className="text-xs text-slate-500 text-center">Publicando semana de treinos…</p>
+                <p className="text-xs text-slate-500 text-center">
+                  Enviando plano ao Especialista…
+                </p>
               )}
               {isResponding &&
                 messages[messages.length - 1]?.role === 'assistant' &&

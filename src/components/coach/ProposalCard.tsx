@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { Dumbbell, Check, CheckCircle2, Loader2, X } from 'lucide-react'
+import { Dumbbell, ArrowRight, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import type { CoachDraft } from '@/services/coachDrafts'
 
 interface ProposalCardProps {
   draft: CoachDraft
-  onConfirm: (id: string) => Promise<void>
+  /** Mantido por compatibilidade — o processamento é automático agora. */
+  onConfirm?: (id: string) => Promise<void>
   onDiscard: (id: string) => Promise<void>
 }
 
@@ -49,10 +50,9 @@ const TYPE_LABELS: Record<string, string> = {
   core: 'Core',
 }
 
-export function ProposalCard({ draft, onConfirm, onDiscard }: ProposalCardProps) {
+export function ProposalCard({ draft, onDiscard }: ProposalCardProps) {
   const { toast } = useToast()
-  const [loading, setLoading] = useState<'confirm' | 'discard' | null>(null)
-  const [confirmed, setConfirmed] = useState(false)
+  const [loading, setLoading] = useState<'discard' | null>(null)
 
   const payload = (draft.payload || {}) as {
     title?: string
@@ -79,29 +79,6 @@ export function ProposalCard({ draft, onConfirm, onDiscard }: ProposalCardProps)
       : Array.isArray(payload.exercises)
         ? payload.exercises
         : []
-
-  const handleConfirm = async () => {
-    setLoading('confirm')
-    try {
-      await onConfirm(draft.id)
-      setConfirmed(true)
-      toast({
-        title: 'Treino adicionado!',
-        description: 'O plano foi salvo nos seus treinos com status "pendente".',
-      })
-    } catch (err) {
-      toast({
-        title: 'Erro ao confirmar treino',
-        description:
-          err instanceof Error
-            ? err.message
-            : 'Não foi possível confirmar o treino. Tente novamente.',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(null)
-    }
-  }
 
   const handleDiscard = async () => {
     setLoading('discard')
@@ -131,12 +108,10 @@ export function ProposalCard({ draft, onConfirm, onDiscard }: ProposalCardProps)
           <Dumbbell className="w-3.5 h-3.5" />
           {days.length > 1 ? 'Proposta de semana' : 'Proposta de treino'}
         </span>
-        {confirmed && (
-          <span className="flex items-center gap-1.5 rounded-full bg-[#A3E635] px-2.5 py-1 text-[11px] font-bold text-[#0B0B10] uppercase tracking-wide">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Adicionado aos seus treinos
-          </span>
-        )}
+        <span className="flex items-center gap-1.5 rounded-full bg-[#A3E635] px-2.5 py-1 text-[11px] font-bold text-[#0B0B10] uppercase tracking-wide">
+          <ArrowRight className="w-3.5 h-3.5" />
+          Enviado ao Especialista
+        </span>
       </div>
 
       {/* Corpo */}
@@ -208,38 +183,31 @@ export function ProposalCard({ draft, onConfirm, onDiscard }: ProposalCardProps)
           </ul>
         )}
 
-        {/* Ações */}
-        {!confirmed && (
-          <div className="flex items-center gap-2 pt-1">
-            <Button
-              type="button"
-              onClick={handleConfirm}
-              disabled={loading !== null}
-              className="bg-[#A3E635] text-[#0B0B10] hover:bg-[#A3E635]/90 font-bold"
-            >
-              {loading === 'confirm' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Check className="w-4 h-4" />
-              )}
-              Confirmar
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleDiscard}
-              disabled={loading !== null}
-              className="text-slate-300 hover:bg-[#262635] hover:text-white border border-[#262635]"
-            >
-              {loading === 'discard' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <X className="w-4 h-4" />
-              )}
-              Descartar
-            </Button>
-          </div>
-        )}
+        {/* Aviso de processamento automático */}
+        <div className="rounded-lg border border-[#A3E635]/25 bg-[#A3E635]/10 px-3 py-2.5">
+          <p className="text-xs text-[#ECFCCB] leading-relaxed">
+            Plano de treino enviado para o Especialista. Confira em{' '}
+            <span className="font-bold">/treinos</span>!
+          </p>
+        </div>
+
+        {/* Ações — apenas descartar (processamento é automático) */}
+        <div className="flex items-center gap-2 pt-1">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleDiscard}
+            disabled={loading !== null}
+            className="text-slate-300 hover:bg-[#262635] hover:text-white border border-[#262635]"
+          >
+            {loading === 'discard' ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <X className="w-4 h-4" />
+            )}
+            Descartar
+          </Button>
+        </div>
       </div>
     </div>
   )

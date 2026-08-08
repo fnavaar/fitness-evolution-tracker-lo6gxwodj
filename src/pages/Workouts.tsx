@@ -24,7 +24,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { WorkoutCard } from '@/components/workouts/WorkoutCard'
 import { GenerateWorkoutDialog } from '@/components/workouts/GenerateWorkoutDialog'
 import { WorkoutDetailDialog } from '@/components/workouts/WorkoutDetailDialog'
-import { listPendingDrafts, validateCoachWorkout, type CoachDraft } from '@/services/coachDrafts'
+import { WorkoutSpecialistChat } from '@/components/workouts/WorkoutSpecialistChat'
+import { listPendingDrafts, type CoachDraft } from '@/services/coachDrafts'
 
 type FilterValue = 'todos' | WorkoutGoal
 
@@ -88,6 +89,7 @@ export default function Workouts() {
     async (draft: CoachDraft) => {
       setPublishingDraftId(draft.id)
       try {
+        const { validateCoachWorkout } = await import('@/services/coachDrafts')
         const result = await validateCoachWorkout(draft.id)
         setPendingDrafts((current) => current.filter((item) => item.id !== draft.id))
         toast({
@@ -219,7 +221,7 @@ export default function Workouts() {
             ) : (
               <ClipboardCheck className="w-4 h-4" />
             )}
-            {isCheckingCoachDraft ? 'Buscando proposta...' : 'Validar Treino do Coach IA'}
+            {isCheckingCoachDraft ? 'Buscando proposta...' : 'Publicar proposta manualmente'}
           </Button>
           <Button
             onClick={() => setGenerateOpen(true)}
@@ -323,6 +325,9 @@ export default function Workouts() {
         onOpenChange={(v) => !v && setSelected(null)}
         onMutated={load}
       />
+
+      {/* Chat colapsável com o Especialista de Treinos */}
+      <WorkoutSpecialistChat onWorkoutsChanged={load} />
     </div>
   )
 }
