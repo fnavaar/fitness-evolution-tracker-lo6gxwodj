@@ -22,7 +22,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { WorkoutCard } from '@/components/workouts/WorkoutCard'
-import { GenerateWorkoutDialog } from '@/components/workouts/GenerateWorkoutDialog'
 import { WorkoutDetailDialog } from '@/components/workouts/WorkoutDetailDialog'
 import { WorkoutSpecialistChat } from '@/components/workouts/WorkoutSpecialistChat'
 import { listPendingDrafts, type CoachDraft } from '@/services/coachDrafts'
@@ -50,7 +49,7 @@ export default function Workouts() {
 
   const [filter, setFilter] = useState<FilterValue>('todos')
 
-  const [generateOpen, setGenerateOpen] = useState(false)
+  const [specialistOpen, setSpecialistOpen] = useState(false)
   const [selected, setSelected] = useState<WorkoutRecord | null>(null)
 
   const load = useCallback(async () => {
@@ -224,7 +223,7 @@ export default function Workouts() {
             {isCheckingCoachDraft ? 'Buscando proposta...' : 'Publicar proposta manualmente'}
           </Button>
           <Button
-            onClick={() => setGenerateOpen(true)}
+            onClick={() => setSpecialistOpen(true)}
             className="bg-[#A3E635] hover:bg-[#84CC16] text-[#0B0B10] font-bold rounded-xl shadow-lg shadow-[#A3E635]/20 hover:shadow-[#A3E635]/40 hover:scale-[1.02] transition-all"
           >
             <Sparkles className="w-4 h-4" />
@@ -252,7 +251,7 @@ export default function Workouts() {
       ) : isLoading ? (
         <LoadingState />
       ) : workouts.length === 0 ? (
-        <EmptyState onGenerate={() => setGenerateOpen(true)} />
+        <EmptyState onGenerate={() => setSpecialistOpen(true)} />
       ) : (
         <>
           {/* Filtros rápidos */}
@@ -314,11 +313,6 @@ export default function Workouts() {
       )}
 
       {/* Modais */}
-      <GenerateWorkoutDialog
-        open={generateOpen}
-        onOpenChange={setGenerateOpen}
-        onGenerated={() => load()}
-      />
       <WorkoutDetailDialog
         workout={selected}
         open={!!selected}
@@ -326,8 +320,12 @@ export default function Workouts() {
         onMutated={load}
       />
 
-      {/* Chat colapsável com o Especialista de Treinos */}
-      <WorkoutSpecialistChat onWorkoutsChanged={load} />
+      {/* Chat colapsável com o Especialista de Treinos (abre pelo botão "Gerar Treino com IA") */}
+      <WorkoutSpecialistChat
+        onWorkoutsChanged={load}
+        open={specialistOpen}
+        onOpenChange={setSpecialistOpen}
+      />
     </div>
   )
 }

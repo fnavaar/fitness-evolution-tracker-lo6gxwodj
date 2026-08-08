@@ -70,38 +70,6 @@ export async function fetchUserWorkouts(userId: string): Promise<WorkoutRecord[]
   return records as unknown as WorkoutRecord[]
 }
 
-export interface GenerateWorkoutInput {
-  goal: WorkoutGoal
-  level: 'iniciante' | 'intermediario' | 'avancado'
-  duration: 30 | 45 | 60 | 90
-  equipment?: string
-  notes?: string
-}
-
-/**
- * Chama o hook `generate-workout` do backend. O hook orquestra a IA,
- * cria o registro em `workouts` + `workout_exercises` e retorna `{ id }`.
- * Lança erro para o chamador tratar.
- */
-export async function generateWorkout(input: GenerateWorkoutInput): Promise<string> {
-  const res = await pb.send('/backend/v1/generate-workout', {
-    method: 'POST',
-    body: {
-      goal: input.goal,
-      level: input.level,
-      duration: input.duration,
-      equipment: input.equipment || '',
-      notes: input.notes || '',
-    },
-  })
-
-  if (res?.error) {
-    throw new Error(res.error)
-  }
-
-  return res?.id as string
-}
-
 /* ----------------- CRUD ----------------- */
 
 export interface UpdateWorkoutInput {

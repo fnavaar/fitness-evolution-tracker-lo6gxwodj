@@ -23,15 +23,29 @@ const INITIAL_MESSAGE: ChatMessage = {
 interface WorkoutSpecialistChatProps {
   /** Callback disparado quando o especialista menciona criar/processar treinos. */
   onWorkoutsChanged?: () => void
+  /** Controla se o chat abre expandido (ex.: botão "Gerar Treino com IA"). */
+  open?: boolean
+  /** Chamado quando o chat é aberto/fechado externamente. */
+  onOpenChange?: (open: boolean) => void
 }
 
 /**
  * Chat colapsável com o Especialista de Treinos (agente workout-specialist),
  * restrito à área /treinos. Inicia colapsado como uma barra fixa no bottom.
  */
-export function WorkoutSpecialistChat({ onWorkoutsChanged }: WorkoutSpecialistChatProps) {
+export function WorkoutSpecialistChat({
+  onWorkoutsChanged,
+  open,
+  onOpenChange,
+}: WorkoutSpecialistChatProps) {
   const { toast } = useToast()
-  const [expanded, setExpanded] = useState(false)
+  const [expandedInternal, setExpandedInternal] = useState(false)
+  // `open` controla externamente; se não fornecido, usa o estado interno.
+  const expanded = open !== undefined ? open : expandedInternal
+  const setExpanded = (v: boolean) => {
+    setExpandedInternal(v)
+    onOpenChange?.(v)
+  }
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE])
   const [input, setInput] = useState('')
   const [isResponding, setIsResponding] = useState(false)
