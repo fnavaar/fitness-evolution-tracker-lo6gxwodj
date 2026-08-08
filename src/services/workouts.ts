@@ -122,10 +122,47 @@ export async function updateWorkout(id: string, data: UpdateWorkoutInput): Promi
 }
 
 /**
- * Exclui um treino. Lança erro para o chamador tratar.
+ * Exclui um treino e todos os seus itens de exercício relacionados.
+ *
+ * O PocketBase impede a exclusão de um `workout` enquanto existirem
+ * registros filhos em `workout_exercises` (relação obrigatória), por isso
+ * é preciso removê-los antes de deletar o registro pai. Lança erro para o
+ * chamador tratar.
  */
 export async function deleteWorkout(id: string): Promise<void> {
-  await pb.collection('workouts').delete(id)
+  // 1. Busca todos os itens de exercício relacionados ao treino.
+  let children: { id: string }[] = []
+  try {
+    children = await pb.collection('workout_exercises').getFullList({
+      filter: `workout_id = "${id}"`,
+    })
+  } catch (err) {
+    throw new Error(
+      'Falha ao listar os exercícios do treino para exclusão: ' +
+        (err instanceof Error ? err.message : String(err)),
+    )
+  }
+
+  // 2. Deleta cada filho (PocketBase JS SDK não expõe batch delete público).
+  for (const child of children) {
+    try {
+      await pb.collection('workout_exercises').delete(child.id)
+    } catch (err) {
+      throw new Error(
+        'Falha ao excluir um exercício do treino: ' +
+          (err instanceof Error ? err.message : String(err)),
+      )
+    }
+  }
+
+  // 3. Deleta o treino pai.
+  try {
+    await pb.collection('workouts').delete(id)
+  } catch (err) {
+    throw new Error(
+      'Falha ao excluir o treino: ' + (err instanceof Error ? err.message : String(err)),
+    )
+  }
 }
 
 export interface UpdateWorkoutExerciseInput {
