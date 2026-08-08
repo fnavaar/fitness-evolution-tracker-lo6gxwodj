@@ -1,5 +1,9 @@
 // Lista as mensagens de uma conversa anterior do usuário com o Coach Rocha.
 // GET /backend/v1/coach/conversations/{conversationId}/messages  (auth obrigatório)
+//
+// Antes de delegar ao runtime do agente, valida a posse da conversa através da
+// collection shadow `coach_conversations` (migration 0031) — conversas excluídas
+// pelo usuário não têm registro shadow e portanto retornam 404.
 routerAdd(
   'GET',
   '/backend/v1/coach/conversations/{conversationId}/messages',
@@ -11,6 +15,21 @@ routerAdd(
 
       const conversationId = e.request.pathValue('conversationId')
       if (!conversationId) return e.badRequestError('conversationId is required')
+
+      // Verifica posse via registro shadow.
+      let shadow
+      try {
+        shadow = $app.findFirstRecordByData(
+          'coach_conversations',
+          'agent_conversation_id',
+          conversationId,
+        )
+      } catch (_) {
+        return e.json(404, { error: 'Conversa não encontrada.' })
+      }
+      if (!shadow || shadow.get('user_id') !== userId) {
+        return e.json(404, { error: 'Conversa não encontrada.' })
+      }
 
       const result = $ai.agent('fitness-coach').listMessages({
         conversation_id: conversationId,

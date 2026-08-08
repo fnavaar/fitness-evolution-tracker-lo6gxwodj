@@ -26,6 +26,34 @@ routerAdd(
         id: body.conversation_id || null,
       })
 
+      // Espelha a conversa na collection shadow `coach_conversations` para que
+      // rename/delete funcionem (o SDK do Skip AI não expõe esses métodos).
+      // O title é derivado da primeira mensagem do usuário e só é definido na
+      // criação — renomeações posteriores do usuário são preservadas.
+      try {
+        let shadow = null
+        try {
+          shadow = $app.findFirstRecordByData(
+            'coach_conversations',
+            'agent_conversation_id',
+            conv.id,
+          )
+        } catch (_) {
+          shadow = null
+        }
+        if (!shadow) {
+          const shortTitle = message.length > 60 ? message.slice(0, 60).trim() + '…' : message
+          const col = $app.findCollectionByNameOrId('coach_conversations')
+          const rec = new Record(col)
+          rec.set('user_id', userId)
+          rec.set('agent_conversation_id', conv.id)
+          rec.set('title', shortTitle || 'Nova conversa')
+          $app.save(rec)
+        }
+      } catch (_) {
+        // Falha no espelhamento não deve quebrar o chat.
+      }
+
       const iter = $ai.agent('fitness-coach').chat({
         user_id: userId,
         conversation_id: conv.id,

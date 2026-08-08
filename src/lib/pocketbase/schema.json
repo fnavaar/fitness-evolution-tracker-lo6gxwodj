@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-08T04:46:48.561Z",
+  "generatedAt": "2026-08-08T13:37:10.708Z",
   "collections": [
     {
       "name": "users",
@@ -897,6 +897,56 @@
         }
       ],
       "indexes": []
+    },
+    {
+      "name": "coach_conversations",
+      "type": "base",
+      "apiRules": {
+        "list": "user_id = @request.auth.id",
+        "view": "user_id = @request.auth.id",
+        "create": "user_id = @request.auth.id",
+        "update": "user_id = @request.auth.id",
+        "delete": "user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "agent_conversation_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_cc_user_id ON coach_conversations (user_id)",
+        "CREATE UNIQUE INDEX idx_cc_agent_conv_id ON coach_conversations (agent_conversation_id)"
+      ]
     }
   ]
 }
