@@ -41,6 +41,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               {/* ADD ALL PROTECTED ROUTES HERE (treinos, dietas, receitas, exercicios, coach, onboarding, configuracoes) */}
               <Route path="/treinos" element={<Workouts />} />
+              <Route path="/treino" element={<Workouts />} />
               <Route path="/workouts" element={<Workouts />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dietas" element={<Diets />} />

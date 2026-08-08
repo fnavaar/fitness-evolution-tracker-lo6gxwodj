@@ -43,6 +43,7 @@ export default function Workouts() {
   const [workouts, setWorkouts] = useState<WorkoutRecord[]>([])
   const [pendingDrafts, setPendingDrafts] = useState<CoachDraft[]>([])
   const [publishingDraftId, setPublishingDraftId] = useState<string | null>(null)
+  const [isCheckingCoachDraft, setIsCheckingCoachDraft] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -113,6 +114,48 @@ export default function Workouts() {
     [load, toast],
   )
 
+  const handleValidateLatestCoachDraft = useCallback(async () => {
+    if (!user) return
+
+    setIsCheckingCoachDraft(true)
+    try {
+      const drafts = await listPendingDrafts(user.id)
+      const workoutDrafts = drafts.filter((draft) => draft.type === 'workout')
+      setPendingDrafts(workoutDrafts)
+
+      if (workoutDrafts.length === 0) {
+        toast({
+          title: 'Nenhuma proposta pendente encontrada',
+          description:
+            'O Coach ainda não registrou uma proposta para validar. Volte ao Coach IA e peça para criar o treino novamente.',
+          variant: 'default',
+        })
+        return
+      }
+
+      if (workoutDrafts.length > 1) {
+        toast({
+          title: 'Há propostas do Coach para revisar',
+          description:
+            'As propostas estão listadas nesta página. Valide cada semana separadamente.',
+          variant: 'default',
+        })
+        return
+      }
+
+      await handleValidateCoachWorkout(workoutDrafts[0])
+    } catch (checkError) {
+      toast({
+        title: 'Não foi possível buscar a proposta do Coach',
+        description:
+          checkError instanceof Error ? checkError.message : 'Tente novamente em alguns instantes.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsCheckingCoachDraft(false)
+    }
+  }, [handleValidateCoachWorkout, toast, user])
+
   useEffect(() => {
     load()
   }, [load])
@@ -163,13 +206,29 @@ export default function Workouts() {
           </div>
         </div>
 
-        <Button
-          onClick={() => setGenerateOpen(true)}
-          className="bg-[#A3E635] hover:bg-[#84CC16] text-[#0B0B10] font-bold rounded-xl shadow-lg shadow-[#A3E635]/20 hover:shadow-[#A3E635]/40 hover:scale-[1.02] transition-all"
-        >
-          <Sparkles className="w-4 h-4" />
-          Gerar Treino com IA
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleValidateLatestCoachDraft}
+            disabled={isCheckingCoachDraft || publishingDraftId !== null}
+            className="border-[#A3E635]/40 bg-[#12121A] text-[#ECFCCB] hover:bg-[#A3E635]/10 hover:text-white font-bold rounded-xl"
+          >
+            {isCheckingCoachDraft ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ClipboardCheck className="w-4 h-4" />
+            )}
+            {isCheckingCoachDraft ? 'Buscando proposta...' : 'Validar Treino do Coach IA'}
+          </Button>
+          <Button
+            onClick={() => setGenerateOpen(true)}
+            className="bg-[#A3E635] hover:bg-[#84CC16] text-[#0B0B10] font-bold rounded-xl shadow-lg shadow-[#A3E635]/20 hover:shadow-[#A3E635]/40 hover:scale-[1.02] transition-all"
+          >
+            <Sparkles className="w-4 h-4" />
+            Gerar Treino com IA
+          </Button>
+        </div>
       </div>
 
       {pendingDrafts.length > 0 && (
