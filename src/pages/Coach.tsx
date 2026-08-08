@@ -286,11 +286,15 @@ export default function Coach() {
         if (user?.id && askedForWorkout && !coachCreatedDraft) {
           setProposalLoading(true)
           try {
-            // Envia ao Especialista para gerar a partir do que o Coach orientou.
+            // Envia ao Especialista para gerar a partir do pedido do atleta.
+            // Inclui a última mensagem do usuário como contexto para o agente
+            // saber o que gerar (dias, objetivo, preferências).
             const res = await sendSpecialistMessage(
-              'O Coach Rocha orientou um plano de treino. Gere e crie no banco de dados (workouts + workout_exercises) a semana de treino coerente com essa orientação e com o perfil do atleta, usando apenas exercícios do catálogo (5 a 8 por treino), com sets, reps, rest_time e sort_order. Se houver dias definidos, crie um workout por dia preenchendo day_of_week e workout_type. user_id: ' +
+              'O atleta pediu um treino e o Coach Rocha orientou o plano. Gere e crie no banco de dados (workouts + workout_exercises) o treino/semana coerente com este pedido e com o perfil do atleta, usando apenas exercícios do catálogo (5 a 8 por treino), com sets, reps, rest_time e sort_order. Se houver dias definidos, crie um workout por dia preenchendo day_of_week e workout_type. user_id: ' +
                 user.id +
-                '. Resuma em PT-BR.',
+                '. Pedido do atleta: "' +
+                lastUserText +
+                '". Resuma em PT-BR.',
               { conversationId: null },
             )
             const headerConv = res.headers.get('X-Conversation-Id')
