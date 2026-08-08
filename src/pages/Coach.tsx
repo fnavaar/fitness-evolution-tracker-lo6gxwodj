@@ -14,7 +14,6 @@ import {
   type Conversation,
 } from '@/services/coach'
 import { listPendingDrafts, discardDraft, type CoachDraft } from '@/services/coachDrafts'
-import { sendSpecialistMessage, streamSpecialistChat } from '@/services/workouts'
 import { CoachAvatar } from '@/components/coach/CoachAvatar'
 import { ChatMessage as ChatMessageBubble } from '@/components/coach/ChatMessage'
 import { ChatInput } from '@/components/coach/ChatInput'
@@ -269,60 +268,6 @@ export default function Coach() {
             }
           } catch {
             /* best-effort */
-          } finally {
-            setProposalLoading(false)
-          }
-        }
-
-        // Fallback de geração: se o usuário pediu para gerar/criar/recriar um
-        // treino e o Coach NÃO chamou a tool coach_drafts (respondeu só em
-        // texto), dispara o Especialista de Treinos automaticamente para
-        // materializar o plano. Sem isso, o Coach "promete" e nada é criado.
-        const askedForWorkout =
-          /(gerar|criar|montar|recriar|refazer|semana de treino|plano de treino|treino de)/i.test(
-            lastUserText,
-          )
-        const coachCreatedDraft = result.toolCalls.some((tc) => tc.name === 'coach_drafts' && tc.ok)
-        // Se o Coach está em modo de triagem (pedindo info de saúde/equipamento),
-        // NÃO dispara o Especialista — gerar sem triagem viola a segurança.
-        const coachAskingInfo =
-          /(tem press|diabetes|cardíac|dor no peito|falta de ar|lesão|cirurgia|joelho|coluna|ombro|quadril|onde vai treinar|com o quê|equipamento|me responda|preciso saber|perguntas?|sinal)/i.test(
-            result.content || '',
-          )
-        if (user?.id && askedForWorkout && !coachCreatedDraft && !coachAskingInfo) {
-          setProposalLoading(true)
-          try {
-            // Envia ao Especialista para gerar a partir do pedido do atleta.
-            // Inclui a última mensagem do usuário como contexto para o agente
-            // saber o que gerar (dias, objetivo, preferências).
-            const res = await sendSpecialistMessage(
-              'O atleta pediu um treino e o Coach Rocha orientou o plano. Gere e crie no banco de dados (workouts + workout_exercises) o treino/semana coerente com este pedido e com o perfil do atleta, usando apenas exercícios do catálogo (5 a 8 por treino), com sets, reps, rest_time e sort_order. Se houver dias definidos, crie um workout por dia preenchendo day_of_week e workout_type. user_id: ' +
-                user.id +
-                '. Pedido do atleta: "' +
-                lastUserText +
-                '". Resuma em PT-BR.',
-              { conversationId: null },
-            )
-            const headerConv = res.headers.get('X-Conversation-Id')
-            await streamSpecialistChat(res, {
-              onChunk: () => {},
-              onError: (msg) => {
-                throw new Error(msg)
-              },
-            })
-            toast({
-              title: 'Treino em geração',
-              description:
-                'O Especialista de Treinos está criando seu treino. Confira em /treinos.',
-            })
-            void headerConv
-          } catch (specialistErr) {
-            console.error('Erro ao disparar Especialista no fallback:', specialistErr)
-            toast({
-              title: 'Não foi possível gerar agora',
-              description: 'Tente novamente em instantes ou use o Especialista em /treinos.',
-              variant: 'destructive',
-            })
           } finally {
             setProposalLoading(false)
           }
