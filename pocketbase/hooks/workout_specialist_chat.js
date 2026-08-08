@@ -31,10 +31,11 @@ routerAdd(
         )
 
       if (looksLikePastedWorkout && !isExplicitlyAnalyzeOnly) {
-        message +=
-          '\n\n[OBRIGATÓRIO] Crie os cards AGORA usando as ferramentas create_workouts e create_workout_exercises. user_id=' +
+        message =
+          '[OBRIGATÓRIO] O atleta colou um treino do Coach. CRIE os cards AGORA usando as ferramentas create_workouts e create_workout_exercises. user_id=' +
           userId +
-          '. Crie 1 workout por dia E os workout_exercises de cada exercício (exercise_id do catálogo, sets, reps, rest_time, sort_order). Não responda sem criar os exercícios.'
+          '. Crie 1 workout por dia (day_of_week, workout_type, status pendente) E TODOS os workout_exercises de cada exercício (exercise_id do catálogo, sets, reps, rest_time, sort_order). Só responda depois de criar os exercícios.\n\nTreino colado pelo atleta:\n' +
+          message
       }
 
       // Pré-resolve o id da conversa para enviá-lo no header antes do 1º byte.
