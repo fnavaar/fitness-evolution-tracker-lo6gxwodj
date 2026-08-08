@@ -234,11 +234,10 @@ export default function Coach() {
         }
 
         // O draft é um handoff interno do Coach. Para treinos, o plano macro
-        // é enviado automaticamente ao Especialista de Treinos (hook
-        // workout_specialist_process), que o aprofunda em um treino completo
-        // diretamente no banco. Aqui apenas exibimos o card informativo
-        // (sem confirmação manual) para o atleta saber que o plano foi
-        // encaminhado — ele confere o resultado em /treinos.
+        // fica como proposta e o atleta o converte em treino completo na área
+        // /treinos, pelo chat do Especialista de Treinos (botão "Gerar do
+        // plano do Coach"). Aqui apenas exibimos o card informativo para o
+        // atleta saber que o plano está pronto para ser gerado.
         if (user?.id && result.toolCalls.some((tc) => tc.name === 'coach_drafts' && tc.ok)) {
           setProposalLoading(true)
           try {
@@ -255,15 +254,15 @@ export default function Coach() {
               fresh.forEach((d) => seenDraftIds.current.add(d.id))
               setProposals((prev) => [...prev, ...fresh])
               toast({
-                title: 'Plano enviado ao Especialista de Treinos',
-                description: 'Seu treino está sendo gerado. Confira em /treinos!',
+                title: 'Plano de treino pronto',
+                description: 'Gere seu treino completo em /treinos, no chat do Especialista.',
               })
             } else {
               // Fallback: o agente chamou a tool com ok:true, mas não achamos
               // nenhum draft novo (create silenciosamente rejeitado, por ex.).
               toast({
-                title: 'Treino em processamento',
-                description: 'O Coach preparou seu treino. Acesse Meus Treinos em instantes.',
+                title: 'Plano de treino pronto',
+                description: 'Acesse Meus Treinos e use o botão do Especialista para gerar.',
                 variant: 'default',
               })
             }
@@ -445,9 +444,7 @@ export default function Coach() {
                 </div>
               )}
               {proposalLoading && isResponding && (
-                <p className="text-xs text-slate-500 text-center">
-                  Enviando plano ao Especialista…
-                </p>
+                <p className="text-xs text-slate-500 text-center">Preparando plano…</p>
               )}
               {isResponding &&
                 messages[messages.length - 1]?.role === 'assistant' &&

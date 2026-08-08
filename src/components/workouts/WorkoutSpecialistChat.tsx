@@ -168,7 +168,7 @@ export function WorkoutSpecialistChat({ onWorkoutsChanged }: WorkoutSpecialistCh
 
   const handleQuickGenerate = () => {
     sendMessage(
-      'Gerar do plano do Coach: processe meus coach_drafts de treino pendentes (type="workout", status="proposta"), crie o treino completo no banco de dados (workouts + workout_exercises) usando os exercícios do catálogo e, ao final, atualize o draft para status="confirmado".',
+      'Gerar do plano do Coach: processe meus coach_drafts de treino pendentes (type="workout", status="proposta"). Para cada draft, se o payload tiver o campo "days", crie UM workout por dia preenchendo day_of_week e workout_type de cada sessão; use apenas exercícios do catálogo (5 a 8 por treino), com sets, reps, rest_time e sort_order. Crie os registros em workouts e workout_exercises e, ao final, atualize cada draft para status="confirmado". Resuma os treinos criados em PT-BR.',
     )
   }
 
