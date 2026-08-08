@@ -44,6 +44,22 @@ export async function confirmDraft(id: string): Promise<{
 }
 
 /**
+ * Valida uma prescrição do Coach na área Meus Treinos.
+ *
+ * O backend transforma o coach_draft em registros de workouts e
+ * workout_exercises. workout_logs não participa deste fluxo: ele é reservado
+ * para o registro de uma sessão que já foi realizada pelo atleta.
+ */
+export async function validateCoachWorkout(id: string): Promise<{
+  id: string
+  type: string
+  ids?: string[]
+  sessions?: number
+}> {
+  return confirmDraft(id)
+}
+
+/**
  * Descarta um rascunho (status "descartado"). Não materializa nada.
  */
 export async function discardDraft(id: string): Promise<void> {

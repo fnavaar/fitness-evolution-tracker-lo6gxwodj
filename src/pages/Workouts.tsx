@@ -24,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { WorkoutCard } from '@/components/workouts/WorkoutCard'
 import { GenerateWorkoutDialog } from '@/components/workouts/GenerateWorkoutDialog'
 import { WorkoutDetailDialog } from '@/components/workouts/WorkoutDetailDialog'
-import { confirmDraft, listPendingDrafts, type CoachDraft } from '@/services/coachDrafts'
+import { listPendingDrafts, validateCoachWorkout, type CoachDraft } from '@/services/coachDrafts'
 
 type FilterValue = 'todos' | WorkoutGoal
 
@@ -83,23 +83,23 @@ export default function Workouts() {
     }
   }, [user, toast])
 
-  const handlePublishDraft = useCallback(
+  const handleValidateCoachWorkout = useCallback(
     async (draft: CoachDraft) => {
       setPublishingDraftId(draft.id)
       try {
-        const result = await confirmDraft(draft.id)
+        const result = await validateCoachWorkout(draft.id)
         setPendingDrafts((current) => current.filter((item) => item.id !== draft.id))
         toast({
-          title: 'Treino adicionado!',
+          title: 'Treino do Coach IA validado',
           description:
             result.sessions && result.sessions > 1
-              ? result.sessions + ' sessões foram adicionadas à sua semana.'
-              : 'O treino já está disponível em Meus Treinos.',
+              ? result.sessions + ' sessões foram publicadas em Meus Treinos.'
+              : 'O treino foi publicado em Meus Treinos.',
         })
         await load()
       } catch (publishError) {
         toast({
-          title: 'Não foi possível adicionar o treino',
+          title: 'Não foi possível validar o treino',
           description:
             publishError instanceof Error
               ? publishError.message
@@ -179,7 +179,7 @@ export default function Workouts() {
               key={draft.id}
               draft={draft}
               isPublishing={publishingDraftId === draft.id}
-              onPublish={handlePublishDraft}
+              onPublish={handleValidateCoachWorkout}
             />
           ))}
         </div>
@@ -352,15 +352,20 @@ function PendingCoachDraftCard({
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-[#A3E635]">
-              Semana criada pelo Coach
+              Treino do Coach IA aguardando validação
             </p>
             <h2 className="mt-1 text-base font-extrabold text-white">
               {payload.title || 'Plano personalizado pronto'}
             </h2>
             <p className="mt-1 text-sm text-slate-300">
               {sessions.length > 0
-                ? sessions.length + ' sessões prontas para adicionar à sua área de treinos.'
-                : 'Seu plano está pronto para adicionar à sua área de treinos.'}
+                ? sessions.length +
+                  ' sessões prontas. Ao validar, elas serão publicadas em Meus Treinos.'
+                : 'Seu plano está pronto. Ao validar, ele será publicado em Meus Treinos.'}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              O histórico de treinos realizados fica separado; esta validação publica o plano em
+              workouts.
             </p>
             {sessions.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -387,7 +392,7 @@ function PendingCoachDraftCard({
           ) : (
             <ClipboardCheck className="w-4 h-4" />
           )}
-          {isPublishing ? 'Adicionando...' : 'Adicionar aos meus treinos'}
+          {isPublishing ? 'Validando...' : 'Validar Treino do Coach IA'}
         </Button>
       </div>
     </div>
