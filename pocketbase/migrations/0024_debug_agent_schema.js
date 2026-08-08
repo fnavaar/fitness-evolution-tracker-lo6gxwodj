@@ -1,1 +1,4 @@
-// placeholder removed
+migrate(
+  (app) => {},
+  (app) => {},
+)

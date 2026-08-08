@@ -134,6 +134,50 @@ export async function listConversations(limit = 50): Promise<Conversation[]> {
 }
 
 /**
+ * Exclui permanentemente uma conversa do usuário autenticado.
+ */
+export async function deleteConversation(conversationId: string): Promise<void> {
+  const res = await fetch(
+    `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/coach/conversations/${encodeURIComponent(conversationId)}`,
+    { method: 'DELETE', headers: { Authorization: pb.authStore.token || '' } },
+  )
+  if (!res.ok) {
+    let msg = 'Não foi possível excluir a conversa.'
+    try {
+      const body = await res.json()
+      if (typeof body?.error === 'string') msg = body.error
+    } catch {
+      /* ignora */
+    }
+    throw new Error(msg)
+  }
+}
+
+/**
+ * Renomeia o título de uma conversa do usuário autenticado.
+ */
+export async function renameConversation(conversationId: string, title: string): Promise<void> {
+  const res = await fetch(
+    `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/coach/conversations/${encodeURIComponent(conversationId)}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: pb.authStore.token || '' },
+      body: JSON.stringify({ title }),
+    },
+  )
+  if (!res.ok) {
+    let msg = 'Não foi possível renomear a conversa.'
+    try {
+      const body = await res.json()
+      if (typeof body?.error === 'string') msg = body.error
+    } catch {
+      /* ignora */
+    }
+    throw new Error(msg)
+  }
+}
+
+/**
  * Carrega as mensagens de uma conversa anterior, filtrando apenas as
  * mensagens exibíveis (role user/assistant com conteúdo).
  */

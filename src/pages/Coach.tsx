@@ -8,6 +8,8 @@ import {
   loadCoachContext,
   listConversations,
   loadMessages,
+  deleteConversation,
+  renameConversation,
   type ChatMessage,
   type Conversation,
 } from '@/services/coach'
@@ -332,6 +334,46 @@ export default function Coach() {
     [user, isResponding, messages, toast, refreshConversations],
   )
 
+  // Renomeia uma conversa (atualização local + backend).
+  const handleRenameConversation = useCallback(
+    async (id: string, title: string) => {
+      try {
+        await renameConversation(id, title)
+        setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)))
+        toast({ title: 'Conversa renomeada' })
+      } catch (err) {
+        toast({
+          title: 'Erro ao renomear',
+          description: err instanceof Error ? err.message : 'Tente novamente.',
+          variant: 'destructive',
+        })
+        throw err
+      }
+    },
+    [toast],
+  )
+
+  // Exclui uma conversa; se for a ativa, volta para uma nova conversa.
+  const handleDeleteConversation = useCallback(
+    async (id: string) => {
+      try {
+        await deleteConversation(id)
+        if (id === conversationIdRef.current) {
+          handleNewConversation()
+        }
+        await refreshConversations()
+        toast({ title: 'Conversa excluída' })
+      } catch (err) {
+        toast({
+          title: 'Erro ao excluir',
+          description: err instanceof Error ? err.message : 'Tente novamente.',
+          variant: 'destructive',
+        })
+      }
+    },
+    [toast, handleNewConversation, refreshConversations],
+  )
+
   const handleRetry = useCallback(() => {
     if (!lastUserText) return
     handleSend(lastUserText)
@@ -346,6 +388,8 @@ export default function Coach() {
       loading={loadingConvs}
       error={convsError}
       onSelect={handleSelectConversation}
+      onRename={handleRenameConversation}
+      onDelete={handleDeleteConversation}
       onNew={handleNewConversation}
       onRetry={refreshConversations}
     />

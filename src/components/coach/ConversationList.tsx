@@ -9,6 +9,8 @@ interface ConversationListProps {
   loading: boolean
   error: string | null
   onSelect: (id: string) => void
+  onRename: (id: string, title: string) => Promise<void>
+  onDelete: (id: string) => Promise<void>
   onNew: () => void
   onRetry?: () => void
 }
@@ -25,6 +27,8 @@ export function ConversationList({
   loading,
   error,
   onSelect,
+  onRename,
+  onDelete,
   onNew,
   onRetry,
 }: ConversationListProps) {
@@ -86,6 +90,8 @@ export function ConversationList({
               conversation={c}
               active={c.id === activeId}
               onSelect={onSelect}
+              onRename={onRename}
+              onDelete={onDelete}
             />
           ))
         )}
