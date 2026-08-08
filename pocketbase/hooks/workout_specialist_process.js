@@ -46,7 +46,7 @@ onRecordAfterCreateSuccess((e) => {
         record.id +
         '. O plano macro do Coach Rocha contém: ' +
         JSON.stringify(payload) +
-        '. Crie o treino completo no banco de dados (workouts + workout_exercises) usando os exercícios do catálogo e, ao final, atualize o draft para status="confirmado". Responda em PT-BR com o resumo do treino criado.',
+        '. Crie o treino completo no banco de dados (workouts + workout_exercises) usando os exercícios do catálogo. IMPORTANTE: se o payload tiver o campo "days", crie UM workout por dia, preenchendo day_of_week e workout_type de cada sessão. Ao final, atualize o draft para status="confirmado". Responda em PT-BR com o resumo dos treinos criados.',
       stream: false,
     })
 
