@@ -17,8 +17,25 @@ routerAdd(
       if (!userId) return e.unauthorizedError('auth required')
 
       const body = info.body || {}
-      const message = String(body.message || '').trim()
+      let message = String(body.message || '').trim()
       if (!message) return e.badRequestError('message is required')
+
+      // Detecta quando o atleta colou um bloco de treino do Coach (formato
+      // estruturado com dias/exercícios) e garante a criação automática dos
+      // cards — não depende da decisão do modelo.
+      const looksLikePastedWorkout =
+        /(semana de treino|dia \d|séries|series:|reps:|descanso:|exercícios?:)/i.test(message)
+      const isExplicitlyAnalyzeOnly =
+        /(só analisa|só explica|não cria|nao cria|só me diz|só quero saber|apenas analisa|só avalia)/i.test(
+          message,
+        )
+
+      if (looksLikePastedWorkout && !isExplicitlyAnalyzeOnly) {
+        message +=
+          '\n\n---\n[INSTRUÇÃO DO SISTEMA] O atleta colou um treino gerado pelo Coach Rocha. CRIE os cards agora: para cada dia, crie UM registro em workouts (title, description, goal, days_per_week, status="pendente", day_of_week, workout_type, user_id=' +
+          userId +
+          ') e para cada exercício crie UM registro em workout_exercises (workout_id do criado, exercise_id do catálogo, sets, reps, rest_time, sort_order). Use as ferramentas de criação. Complete com exercícios do catálogo se houver menos de 5 por dia. NÃO pergunte se deve criar — crie. Depois resuma em PT-BR o que criou.'
+      }
 
       // Pré-resolve o id da conversa para enviá-lo no header antes do 1º byte.
       const conv = $ai.agent('workout-specialist').getOrCreateConversation({
