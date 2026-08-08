@@ -32,9 +32,9 @@ routerAdd(
 
       if (looksLikePastedWorkout && !isExplicitlyAnalyzeOnly) {
         message +=
-          '\n\n---\n[INSTRUÇÃO DO SISTEMA] O atleta colou um treino gerado pelo Coach Rocha. CRIE os cards agora: para cada dia, crie UM registro em workouts (title, description, goal, days_per_week, status="pendente", day_of_week, workout_type, user_id=' +
+          '\n\n[OBRIGATÓRIO] Crie os cards AGORA usando as ferramentas create_workouts e create_workout_exercises. user_id=' +
           userId +
-          ') e para cada exercício crie UM registro em workout_exercises (workout_id do criado, exercise_id do catálogo, sets, reps, rest_time, sort_order). Use as ferramentas de criação. Complete com exercícios do catálogo se houver menos de 5 por dia. NÃO pergunte se deve criar — crie. Depois resuma em PT-BR o que criou.'
+          '. Crie 1 workout por dia E os workout_exercises de cada exercício (exercise_id do catálogo, sets, reps, rest_time, sort_order). Não responda sem criar os exercícios.'
       }
 
       // Pré-resolve o id da conversa para enviá-lo no header antes do 1º byte.
