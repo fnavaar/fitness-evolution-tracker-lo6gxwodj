@@ -240,22 +240,23 @@ routerAdd(
       e.response.header().set('X-Conversation-Id', conv.id)
       $response.stream(e, iter)
     } catch (err) {
-      if (err instanceof SkipAiConfigError) {
+      // Tratamento genérico: não dependemos das classes SkipAi*Error, que
+      // podem não estar no escopo da JSVM em todos os cenários.
+      const status = (err && err.status) || 0
+      const msg = (err && err.message) || String(err)
+
+      if (status === 401 || status === 403 || /config|gateway|unauthor/i.test(msg)) {
         return e.json(503, { error: 'Especialista de Treinos temporariamente indisponível.' })
       }
-      if (err instanceof SkipAiAgentsError) {
-        const status = err.status || 500
-        return e.json(status, {
-          error: status >= 500 ? 'Falha ao conectar com o Especialista.' : err.message,
-        })
+      if (status >= 400 && status < 500) {
+        return e.json(status, { error: msg })
       }
-      if (err instanceof SkipAiError) {
-        const status = err.status || 502
-        return e.json(status, {
-          error: status >= 500 ? 'Especialista de Treinos indisponível.' : err.message,
-        })
+      if (status >= 500 || status === 0 || /timeout|gateway|network|connect/i.test(msg)) {
+        return e.json(502, { error: 'Especialista de Treinos indisponível.' })
       }
-      throw err
+      return e.json(status || 500, {
+        error: status >= 500 ? 'Especialista de Treinos indisponível.' : msg,
+      })
     }
   },
   $apis.requireAuth(),

@@ -67,22 +67,28 @@ routerAdd(
       e.response.header().set('X-Conversation-Id', conv.id)
       $response.stream(e, iter)
     } catch (err) {
-      if (err instanceof SkipAiConfigError) {
+      // Tratamento genérico: não dependemos das classes SkipAi*Error, que
+      // podem não estar no escopo da JSVM em todos os cenários. Usamos
+      // err.status e err.message (presentes em todos os erros do gateway).
+      const status = (err && err.status) || 0
+      const msg = (err && err.message) || String(err)
+
+      // 401/403 do gateway => credenciais/config indisponível => 503.
+      if (status === 401 || status === 403 || /config|gateway|unauthor/i.test(msg)) {
         return e.json(503, { error: 'Coach temporariamente indisponível.' })
       }
-      if (err instanceof SkipAiAgentsError) {
-        const status = err.status || 500
-        return e.json(status, {
-          error: status >= 500 ? 'Falha ao conectar com o coach.' : err.message,
-        })
+      // Erros 4xx do agente (bad arg, conversation not found): devolve a msg.
+      if (status >= 400 && status < 500) {
+        return e.json(status, { error: msg })
       }
-      if (err instanceof SkipAiError) {
-        const status = err.status || 502
-        return e.json(status, {
-          error: status >= 500 ? 'Coach temporariamente indisponível.' : err.message,
-        })
+      // Erros 5xx / timeout / rede: mensagem genérica, sem vazar detalhes.
+      if (status >= 500 || status === 0 || /timeout|gateway|network|connect/i.test(msg)) {
+        return e.json(502, { error: 'Coach temporariamente indisponível.' })
       }
-      throw err
+      // Fallback final: nunca deixa o erro vazar como 500 sem corpo.
+      return e.json(status || 500, {
+        error: status >= 500 ? 'Coach temporariamente indisponível.' : msg,
+      })
     }
   },
   $apis.requireAuth(),

@@ -305,9 +305,21 @@ export async function sendSpecialistMessage(
   message: string,
   opts: { conversationId?: string | null; signal?: AbortSignal } = {},
 ): Promise<Response> {
-  const res = await fetch(
-    `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/workout-specialist/chat`,
-    {
+  // Timeout de 120s (2 minutos). Evita que o fetch fique pendurado quando o
+  // Especialista demora demais (gateway lento / agente travado).
+  const SPECIALIST_TIMEOUT_MS = 120_000
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), SPECIALIST_TIMEOUT_MS)
+
+  const externalSignal = opts.signal
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort()
+    else externalSignal.addEventListener('abort', () => controller.abort(), { once: true })
+  }
+
+  let res: Response
+  try {
+    res = await fetch(`${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/workout-specialist/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -317,8 +329,15 @@ export async function sendSpecialistMessage(
         message,
         conversation_id: opts.conversationId ?? null,
       }),
-      signal: opts.signal,
-    },
-  )
+      signal: controller.signal,
+    })
+  } catch (err) {
+    clearTimeout(timer)
+    if (controller.signal.aborted && !(externalSignal && externalSignal.aborted)) {
+      throw new Error('Especialista ocupado, tente novamente em instantes.')
+    }
+    throw err
+  }
+  clearTimeout(timer)
   return res
 }

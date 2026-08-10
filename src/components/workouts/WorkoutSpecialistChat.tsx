@@ -196,7 +196,7 @@ export function WorkoutSpecialistChat({
           {/* Header / barra colapsada */}
           <button
             type="button"
-            onClick={() => setExpanded((v) => !v)}
+            onClick={() => setExpanded(!expanded)}
             className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[#12121A] hover:bg-[#1A1A24] transition-colors"
           >
             <div className="flex items-center gap-2.5 min-w-0">

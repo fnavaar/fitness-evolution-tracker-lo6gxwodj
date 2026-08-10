@@ -39,19 +39,48 @@ export async function sendMessage(
   opts: { conversationId?: string | null; context?: string; signal?: AbortSignal } = {},
 ): Promise<Response> {
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')
-  const res = await fetch(`${import.meta.env.VITE_POCKETBASE_URL}${COACH_ENDPOINT}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: pb.authStore.token || '',
-    },
-    body: JSON.stringify({
-      message: lastUser?.content ?? '',
-      conversation_id: opts.conversationId ?? null,
-      context: opts.context ?? '',
-    }),
-    signal: opts.signal,
-  })
+
+  // Timeout de 120s (2 minutos). Se o backend demorar mais, aborta com uma
+  // mensagem clara para o usuário — evita que o fetch fique pendurado por
+  // ~10 minutos (timeout silencioso do gateway).
+  const COACH_TIMEOUT_MS = 120_000
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), COACH_TIMEOUT_MS)
+
+  // Combina o sinal externo (ex.: botão "parar") com o interno de timeout.
+  const externalSignal = opts.signal
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort()
+    else externalSignal.addEventListener('abort', () => controller.abort(), { once: true })
+  }
+
+  let res: Response
+  try {
+    res = await fetch(`${import.meta.env.VITE_POCKETBASE_URL}${COACH_ENDPOINT}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: pb.authStore.token || '',
+      },
+      body: JSON.stringify({
+        message: lastUser?.content ?? '',
+        conversation_id: opts.conversationId ?? null,
+        context: opts.context ?? '',
+      }),
+      signal: controller.signal,
+    })
+  } catch (err) {
+    clearTimeout(timer)
+    // Abort por timeout (não pelo sinal externo) → mensagem amigável.
+    if (controller.signal.aborted && !(externalSignal && externalSignal.aborted)) {
+      throw new Error('Coach está ocupado, tente novamente em instantes.')
+    }
+    throw err
+  }
+  // Não limpa o timer aqui: o stream (streamCoachChat) continua consumindo
+  // a Response; o abort só importava para a fase de conexão. O sinal externo
+  // continua válido para cancelar o stream.
+  clearTimeout(timer)
   return res
 }
 

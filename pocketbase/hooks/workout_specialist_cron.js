@@ -57,9 +57,29 @@ cronAdd('process-pending-workout-drafts', '*/2 * * * *', () => {
             (iter && iter.content ? String(iter.content).substring(0, 150) : '(sem conteúdo)'),
         )
       } catch (err) {
-        const msg = err && err.message ? err.message : String(err)
-        console.error('[workout-specialist-cron] falha ao processar draft ' + draft.id + ': ' + msg)
-        // Não marca como confirmado — o próximo ciclo tenta de novo.
+        // Diagnóstico detalhado do 401 do gateway: status, mensagem e
+        // presença (não o valor) das credenciais de gateway, para distinguir
+        // problema de config de problema de agente/modelo.
+        const status = (err && err.status) || 0
+        const msg = (err && err.message) || String(err)
+        const gwKeySet = !!$os.getenv('SKIP_AI_GATEWAY_API_KEY')
+        const gwUrlSet = !!$os.getenv('SKIP_AI_GATEWAY_URL')
+        console.error(
+          '[workout-specialist-cron] falha ao processar draft ' +
+            draft.id +
+            ': status=' +
+            status +
+            ' msg=' +
+            msg +
+            ' gateway_key_set=' +
+            gwKeySet +
+            ' gateway_url_set=' +
+            gwUrlSet,
+        )
+        // 401/403 = problema de credencial/config do gateway — retentar não
+        // ajuda, mas mantemos o draft como proposta para que, uma vez
+        // corrigida a config, o próximo ciclo o processe. Em outros erros
+        // (rede/timeout/5xx) idem: deixa para o próximo ciclo.
       }
     }
   } catch (err) {
