@@ -131,7 +131,16 @@ export default function Onboarding() {
       if (existing.items.length > 0) {
         await pb.collection('profiles').update(existing.items[0].id, payload)
       } else {
-        await pb.collection('profiles').create(payload)
+        try {
+          await pb.collection('profiles').create(payload)
+        } catch (createErr: any) {
+          const data = createErr?.response?.data || {}
+          if (data?.user_id?.code === 'validation_missing_rel_records') {
+            pb.authStore.clear()
+            throw new Error('Sessão expirada. Faça login novamente.')
+          }
+          throw createErr
+        }
       }
 
       try {

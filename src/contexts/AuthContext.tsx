@@ -35,9 +35,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
-    setUser(pb.authStore.record)
-    setToken(pb.authStore.token)
-    setIsLoading(false)
+    // No boot, valida a sessão existente no localStorage: chama authRefresh
+    // para confirmar que o usuário autenticado ainda existe no backend.
+    // Se o usuário foi deletado (ou o token expirou), authRefresh falha e
+    // limpamos o authStore — evitando criar perfil com user_id órfão.
+    async function validateSession() {
+      if (pb.authStore.isValid) {
+        try {
+          const authData = await pb.collection('users').authRefresh()
+          setUser(authData.record)
+          setToken(authData.token)
+        } catch (err) {
+          console.error('Sessão inválida no boot, limpando:', err)
+          pb.authStore.clear()
+          setUser(null)
+          setToken(null)
+        }
+      } else {
+        setUser(null)
+        setToken(null)
+      }
+      setIsLoading(false)
+    }
+
+    validateSession()
 
     const unsubscribe = pb.authStore.onChange((tok, rec) => {
       setUser(rec)

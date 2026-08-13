@@ -74,11 +74,24 @@ export async function getOrCreateProfile(userId: string): Promise<ProfileRecord>
     return res.items[0]
   }
 
-  const created = await pb.collection('profiles').create<ProfileRecord>({
-    user_id: userId,
-    ...DEFAULT_PROFILE,
-  })
-  return created
+  try {
+    const created = await pb.collection('profiles').create<ProfileRecord>({
+      user_id: userId,
+      ...DEFAULT_PROFILE,
+    })
+    return created
+  } catch (err: any) {
+    // user_id órfão (usuário deletado no backend, mas sessão ainda ativa):
+    // o PocketBase rejeita a relação com validation_missing_rel_records.
+    // Nesse caso a sessão não é mais confiável — limpa o authStore para
+    // redirecionar ao login, em vez de deixar o usuário preso num erro 400.
+    const data = err?.response?.data || {}
+    if (data?.user_id?.code === 'validation_missing_rel_records') {
+      pb.authStore.clear()
+      throw new Error('Sessão expirada. Faça login novamente.')
+    }
+    throw err
+  }
 }
 
 export async function updateProfile(
