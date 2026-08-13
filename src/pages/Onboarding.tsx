@@ -114,7 +114,7 @@ export default function Onboarding() {
         goal,
         current_weight: weight,
         height: heightCm,
-        birth_date: new Date(`${birthDate}T12:00:00`).toISOString(),
+        birth_date: birthDate,
         activity_level: activityLevel,
         training_frequency: freq,
         dietary_preference: dietaryPreference,
