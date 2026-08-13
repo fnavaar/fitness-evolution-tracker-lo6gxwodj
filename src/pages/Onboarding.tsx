@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sparkles, ArrowRight, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import pb from '@/lib/pocketbase/client'
+import type { ProfileRecord } from '@/services/profiles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -50,6 +51,35 @@ export default function Onboarding() {
   const [dietaryPreference, setDietaryPreference] = useState('onivoro')
   const [restrictions, setRestrictions] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [checkingProfile, setCheckingProfile] = useState(true)
+
+  // Redireciona para /dashboard caso o usuário já possua perfil.
+  useEffect(() => {
+    let cancelled = false
+    async function checkExistingProfile() {
+      if (!user) {
+        setCheckingProfile(false)
+        return
+      }
+      try {
+        const res = await pb
+          .collection('profiles')
+          .getList<ProfileRecord>(1, 1, { filter: `user_id = "${user.id}"` })
+        if (cancelled) return
+        if (res.items.length > 0) {
+          navigate('/dashboard', { replace: true })
+          return
+        }
+      } catch (e) {
+        console.error('Erro ao verificar perfil existente:', e)
+      }
+      setCheckingProfile(false)
+    }
+    checkExistingProfile()
+    return () => {
+      cancelled = true
+    }
+  }, [user, navigate])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -79,7 +109,7 @@ export default function Onboarding() {
 
     setIsSubmitting(true)
     try {
-      await pb.collection('profiles').create({
+      const payload = {
         user_id: user.id,
         goal,
         current_weight: weight,
@@ -89,7 +119,20 @@ export default function Onboarding() {
         training_frequency: freq,
         dietary_preference: dietaryPreference,
         restrictions: restrictions.trim() || '',
-      })
+      }
+
+      // Verifica novamente se já existe perfil (proteção contra race condition).
+      // Se existir, atualiza em vez de criar — evita o erro 400 do PocketBase
+      // quando a relação user_id → users já está preenchida (maxSelect 1).
+      const existing = await pb
+        .collection('profiles')
+        .getList<ProfileRecord>(1, 1, { filter: `user_id = "${user.id}"` })
+
+      if (existing.items.length > 0) {
+        await pb.collection('profiles').update(existing.items[0].id, payload)
+      } else {
+        await pb.collection('profiles').create(payload)
+      }
 
       try {
         await pb.collection('progress').create({
@@ -101,7 +144,7 @@ export default function Onboarding() {
       }
 
       toast({
-        title: 'Perfil criado!',
+        title: 'Perfil salvo!',
         description: 'Seu perfil e peso inicial foram salvos. Bem-vindo ao EvolutFit.',
       })
       navigate('/dashboard', { replace: true })
@@ -115,6 +158,15 @@ export default function Onboarding() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (checkingProfile) {
+    return (
+      <div className="w-full max-w-lg flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-10 h-10 animate-spin text-[#A3E635]" />
+        <p className="mt-4 text-sm text-slate-400 animate-pulse">Verificando seu perfil...</p>
+      </div>
+    )
   }
 
   return (

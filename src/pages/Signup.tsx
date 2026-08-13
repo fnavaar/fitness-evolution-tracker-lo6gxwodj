@@ -67,6 +67,20 @@ export default function Signup() {
       })
       await pb.collection('users').authWithPassword(email.trim().toLowerCase(), password)
       await refreshUser()
+
+      // Recém-criado: redireciona para o onboarding. Se por acaso já existir
+      // perfil (cadastro prévio órfão), vai direto ao dashboard.
+      try {
+        const existing = await pb.collection('profiles').getList(1, 1, {
+          filter: `user_id = "${pb.authStore.record?.id}"`,
+        })
+        if (existing.items.length > 0) {
+          navigate('/dashboard', { replace: true })
+          return
+        }
+      } catch (e) {
+        console.error('Erro ao verificar perfil pós-signup:', e)
+      }
       navigate('/onboarding', { replace: true })
     } catch (err: any) {
       const message = String(err?.response?.message || '').toLowerCase()

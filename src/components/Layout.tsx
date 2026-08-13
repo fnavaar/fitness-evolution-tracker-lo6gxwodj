@@ -29,17 +29,28 @@ export default function Layout() {
 
   useEffect(() => {
     async function checkProfile() {
-      if (user && location.pathname !== '/onboarding') {
-        try {
-          const profiles = await pb.collection('profiles').getList(1, 1, {
-            filter: `user_id = "${user.id}"`,
-          })
-          if (profiles.items.length === 0) {
-            navigate('/onboarding', { replace: true })
-          }
-        } catch (e) {
-          console.error('Erro ao verificar perfil:', e)
+      if (!user) {
+        setCheckingProfile(false)
+        return
+      }
+      try {
+        const profiles = await pb.collection('profiles').getList(1, 1, {
+          filter: `user_id = "${user.id}"`,
+        })
+        const hasProfile = profiles.items.length > 0
+
+        if (!hasProfile && location.pathname !== '/onboarding') {
+          // Sem perfil: enviar para o onboarding.
+          navigate('/onboarding', { replace: true })
+          return
         }
+        if (hasProfile && location.pathname === '/onboarding') {
+          // Já tem perfil: sair do onboarding e ir ao dashboard.
+          navigate('/dashboard', { replace: true })
+          return
+        }
+      } catch (e) {
+        console.error('Erro ao verificar perfil:', e)
       }
       setCheckingProfile(false)
     }
@@ -47,7 +58,7 @@ export default function Layout() {
     checkProfile()
   }, [user, location.pathname, navigate])
 
-  if (user && location.pathname !== '/onboarding' && checkingProfile) {
+  if (user && checkingProfile) {
     return (
       <div className="min-h-screen bg-[#0B0B10] flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
